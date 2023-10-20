@@ -7,4 +7,6 @@ import "message.proto";
 
 service Standup {
     rpc CreateMessage(CreateMessageRequest) returns (CreateMessageResponse) {}
+    rpc GetMessage(GetMessageRequest) returns (GetMessageResponse) {}
+    rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse) {}
 }
