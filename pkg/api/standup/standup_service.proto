@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package xopoww.standup;
+option go_package = "github.com/xopoww/standup/pkg/api/standup";
+
+import "message.proto";
+
+service Standup {
+    rpc CreateMessage(CreateMessageRequest) returns (CreateMessageResponse) {}
+}

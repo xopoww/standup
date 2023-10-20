@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package xopoww.standup;;
+option go_package = "github.com/xopoww/standup/pkg/api/standup";
+
+import "google/protobuf/timestamp.proto";
+
+message Message {
+    string id = 1;
+    string text = 2;
+
+    google.protobuf.Timestamp created_at = 20;
+}
+
+message CreateMessageRequest {
+    string text = 1;
+}
+
+message CreateMessageResponse {
+    string id = 1;
+}
