@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/xopoww/standup/internal/grpcserver"
+	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/internal/models"
 	"github.com/xopoww/standup/internal/repository/pg"
 	"github.com/xopoww/standup/internal/repository/pg/migrations"
@@ -27,6 +28,7 @@ func NewDaemon(ctx context.Context, cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new migration: %w", err)
 	}
+	mig.Log = logging.MigrateLogger(logging.L(ctx), true)
 	err = mig.Up()
 	if errors.Is(err, migrate.ErrNoChange) {
 		err = nil
@@ -40,7 +42,9 @@ func NewDaemon(ctx context.Context, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("new repo: %w", err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(logging.UnaryInterceptor(logging.L(ctx))),
+	)
 	standup.RegisterStandupServer(grpcServer, grpcserver.NewService(repo))
 
 	return &Daemon{
@@ -50,7 +54,8 @@ func NewDaemon(ctx context.Context, cfg Config) (*Daemon, error) {
 	}, nil
 }
 
-func (d *Daemon) Start() error {
+func (d *Daemon) Start(ctx context.Context) error {
+	logging.L(ctx).Sugar().Infof("Listening on %q...", d.cfg.Service.Addr)
 	lis, err := net.Listen("tcp", d.cfg.Service.Addr)
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
@@ -59,6 +64,7 @@ func (d *Daemon) Start() error {
 }
 
 func (d *Daemon) GracefulStop(ctx context.Context) error {
+	logging.L(ctx).Sugar().Infof("Stopping the daemon...")
 	d.srv.GracefulStop()
 	return d.repo.Close(ctx)
 }

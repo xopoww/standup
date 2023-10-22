@@ -1,4 +1,7 @@
-.PHONY : generate-proto standup-daemon
+.PHONY : gomod generate-proto standup-daemon
+
+gomod:
+	go mod tidy
 
 generate-proto:
 	./scripts/install_protoc.sh
@@ -6,5 +9,5 @@ generate-proto:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3
 	./pkg/api/standup/generate
 
-standup-daemon:
+standup-daemon: gomod
 	go build -o ./bin/standup-daemon ./cmd/standup-daemon
