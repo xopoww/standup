@@ -10,8 +10,11 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/xopoww/standup/internal/logging"
+	"github.com/xopoww/standup/internal/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/config"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -32,9 +35,13 @@ var args struct {
 var deps struct {
 	client standup.StandupClient
 	db     *pgx.Conn
+	logger *zap.Logger
 }
 
 func runTests(m *testing.M) error {
+	deps.logger = logging.NewLogger()
+	defer deps.logger.Sync()
+
 	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
 	flag.Parse()
 	if args.cfgPath == "" {
@@ -47,7 +54,10 @@ func runTests(m *testing.M) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	conn, err := grpc.Dial(cfg.Standup.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(cfg.Standup.Addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(logging.UnaryClientInterceptor(deps.logger)),
+	)
 	if err != nil {
 		return fmt.Errorf("grpc dial: %w", err)
 	}
@@ -71,4 +81,14 @@ func TestMain(m *testing.M) {
 	if err := runTests(m); err != nil {
 		log.Fatalf("Fatal error: %s.", err)
 	}
+}
+
+func RunTest(t *testing.T, name string, f func(context.Context, *testing.T)) {
+	ctx, cancel := testutil.NewContext(context.Background())
+	defer cancel()
+	ctx = logging.WithLogger(ctx, deps.logger)
+	t.Run(name, func(tt *testing.T) {
+		logging.L(ctx).Sugar().Infof("Running %s with ID %q...", t.Name(), testutil.TestID(ctx))
+		f(ctx, tt)
+	})
 }

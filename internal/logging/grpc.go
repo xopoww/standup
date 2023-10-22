@@ -31,6 +31,27 @@ func UnaryInterceptor(l *zap.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
+func UnaryClientInterceptor(l *zap.Logger) grpc.UnaryClientInterceptor {
+	s := l.Sugar()
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		ctx = WithLogger(ctx, l)
+
+		s.Debugf("GRPC Req %s to %s: %s.", method, cc.Target(), marshalJSON(req))
+
+		start := time.Now()
+		err := invoker(ctx, method, req, reply, cc, opts...)
+		delta := time.Since(start)
+
+		if err == nil {
+			s.Debugf("GRPC Rsp %s (%s): %s.", method, delta, marshalJSON(reply))
+		} else {
+			s.Errorf("GRPC Err %s (%s): %s.", method, delta, err)
+		}
+
+		return err
+	}
+}
+
 func marshalJSON(v any) string {
 	data, err := json.Marshal(v)
 	if err != nil {

@@ -2,9 +2,11 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/xopoww/standup/internal/models"
 )
 
@@ -30,6 +32,9 @@ func (r *repository) GetMessage(ctx context.Context, id string) (*models.Message
 	row := r.conn.QueryRow(ctx, stmt, id)
 	msg := &models.Message{ID: id}
 	err = row.Scan(&msg.OwnerID, &msg.Text, &msg.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = fmt.Errorf("message %q %w", id, models.ErrNotFound)
+	}
 	if err != nil {
 		return nil, err
 	}
