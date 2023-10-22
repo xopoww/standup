@@ -2,14 +2,19 @@ package test
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/require"
+	"github.com/xopoww/standup/internal/auth"
+	"github.com/xopoww/standup/internal/grpcserver"
 	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/internal/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
@@ -17,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 type Config struct {
@@ -26,6 +32,10 @@ type Config struct {
 	Database struct {
 		DBS string `yaml:"dbs" validate:"required"`
 	}
+	Auth struct {
+		Enabled        bool   `yaml:"enabled"`
+		PrivateKeyFile string `yaml:"private_key_file" validate:"required_with=Enabled"`
+	} `yaml:"auth"`
 }
 
 var args struct {
@@ -33,9 +43,13 @@ var args struct {
 }
 
 var deps struct {
+	cfg *Config
+
 	client standup.StandupClient
 	db     *pgx.Conn
 	logger *zap.Logger
+
+	jwtPrivateKey *ecdsa.PrivateKey
 }
 
 func runTests(m *testing.M) error {
@@ -52,6 +66,15 @@ func runTests(m *testing.M) error {
 	err := config.LoadFile(args.cfgPath, &cfg)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
+	}
+	deps.cfg = &cfg
+
+	if cfg.Auth.Enabled {
+		pk, err := auth.LoadPrivateKey(cfg.Auth.PrivateKeyFile)
+		if err != nil {
+			return fmt.Errorf("load private key: %w", err)
+		}
+		deps.jwtPrivateKey = pk
 	}
 
 	conn, err := grpc.Dial(cfg.Standup.Addr,
@@ -83,12 +106,26 @@ func TestMain(m *testing.M) {
 	}
 }
 
-func RunTest(t *testing.T, name string, f func(context.Context, *testing.T)) {
+func RunTest(t *testing.T, name string, f func(context.Context, *testing.T), opts ...func(context.Context) context.Context) {
 	ctx, cancel := testutil.NewContext(context.Background())
 	defer cancel()
 	ctx = logging.WithLogger(ctx, deps.logger)
+	for _, opt := range opts {
+		ctx = opt(ctx)
+	}
 	t.Run(name, func(tt *testing.T) {
 		logging.L(ctx).Sugar().Infof("Running %s with ID %q...", t.Name(), testutil.TestID(ctx))
 		f(ctx, tt)
 	})
+}
+
+func withToken(ctx context.Context, t *testing.T, subjectID string) context.Context {
+	if !deps.cfg.Auth.Enabled {
+		return ctx
+	}
+	logging.L(ctx).Sugar().Debugf("Using self-signed token for %q.", subjectID)
+	now := time.Now()
+	token, err := auth.IssueToken(subjectID, now, now.Add(time.Hour), deps.jwtPrivateKey)
+	require.NoError(t, err)
+	return metadata.AppendToOutgoingContext(ctx, grpcserver.MetadataTokenKey, token)
 }

@@ -10,12 +10,13 @@ import (
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/identifiers"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestCreateMessage(t *testing.T) {
 	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
+
 		req := testutil.CreateMessageRequest(ctx)
 		rsp, err := deps.client.CreateMessage(ctx, req)
 		require.NoError(t, err)
@@ -30,6 +31,8 @@ func TestCreateMessage(t *testing.T) {
 
 func TestGetMessage(t *testing.T) {
 	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
+
 		req := testutil.CreateMessageRequest(ctx)
 		rsp, err := deps.client.CreateMessage(ctx, req)
 		require.NoError(t, err)
@@ -41,15 +44,16 @@ func TestGetMessage(t *testing.T) {
 	})
 
 	RunTest(t, "not_found", func(ctx context.Context, t *testing.T) {
+		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
+
 		_, err := deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: identifiers.GenerateID()})
-		require.Error(t, err)
-		s := status.Convert(err)
-		require.Equal(t, codes.NotFound, s.Code())
+		testutil.RequireErrCode(t, codes.NotFound, err)
 	})
 }
 
 func TestListMessages(t *testing.T) {
 	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
 		from := time.Now()
 
 		expected := make([]string, 3)
@@ -74,6 +78,7 @@ func TestListMessages(t *testing.T) {
 	})
 
 	RunTest(t, "partial", func(ctx context.Context, t *testing.T) {
+		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
 		from := time.Now()
 
 		req := testutil.CreateMessageRequest(ctx)
@@ -99,14 +104,14 @@ func TestListMessages(t *testing.T) {
 		from := time.Now()
 
 		req := testutil.CreateMessageRequest(ctx)
-		msg, err := deps.client.CreateMessage(ctx, req)
+		msg, err := deps.client.CreateMessage(withToken(ctx, t, req.OwnerId), req)
 		require.NoError(t, err)
 
 		req.OwnerId = "another-" + req.OwnerId
-		_, err = deps.client.CreateMessage(ctx, req)
+		_, err = deps.client.CreateMessage(withToken(ctx, t, req.OwnerId), req)
 		require.NoError(t, err)
 
-		rsp, err := deps.client.ListMessages(ctx, &standup.ListMessagesRequest{
+		rsp, err := deps.client.ListMessages(withToken(ctx, t, testutil.OwnerID(ctx)), &standup.ListMessagesRequest{
 			OwnerId: testutil.OwnerID(ctx),
 			From:    timestamppb.New(from),
 			To:      timestamppb.Now(),
@@ -117,6 +122,7 @@ func TestListMessages(t *testing.T) {
 	})
 
 	RunTest(t, "empty", func(ctx context.Context, t *testing.T) {
+		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
 		rsp, err := deps.client.ListMessages(ctx, &standup.ListMessagesRequest{
 			OwnerId: testutil.OwnerID(ctx),
 			From:    timestamppb.New(time.Now()),

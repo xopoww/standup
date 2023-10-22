@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/internal/models"
 	"github.com/xopoww/standup/pkg/api/standup"
@@ -18,13 +19,18 @@ type service struct {
 	standup.UnimplementedStandupServer
 
 	repo models.Repository
+
+	ath auth.Authenticator
 }
 
-func NewService(repo models.Repository) standup.StandupServer {
-	return &service{repo: repo}
+func NewService(repo models.Repository, ath auth.Authenticator) standup.StandupServer {
+	return &service{repo: repo, ath: ath}
 }
 
 func (s *service) CreateMessage(ctx context.Context, req *standup.CreateMessageRequest) (*standup.CreateMessageResponse, error) {
+	if err := s.authorize(ctx, req.OwnerId); err != nil {
+		return nil, err
+	}
 	id := identifiers.GenerateID()
 	msg := &models.Message{
 		ID:        id,
@@ -45,6 +51,9 @@ func (s *service) GetMessage(ctx context.Context, req *standup.GetMessageRequest
 	if err != nil {
 		return nil, s.mapError(err)
 	}
+	if err := s.authorize(ctx, msg.OwnerID); err != nil {
+		return nil, err
+	}
 	return &standup.GetMessageResponse{
 		Message: &standup.Message{
 			Id:        msg.ID,
@@ -56,6 +65,9 @@ func (s *service) GetMessage(ctx context.Context, req *standup.GetMessageRequest
 }
 
 func (s *service) ListMessages(ctx context.Context, req *standup.ListMessagesRequest) (*standup.ListMessagesResponse, error) {
+	if err := s.authorize(ctx, req.OwnerId); err != nil {
+		return nil, err
+	}
 	msgs, err := s.repo.ListMessages(ctx, req.OwnerId, req.From.AsTime(), req.To.AsTime())
 	if err != nil {
 		return nil, s.mapError(err)

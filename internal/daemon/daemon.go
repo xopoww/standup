@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/grpcserver"
 	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/internal/models"
@@ -24,6 +25,17 @@ type Daemon struct {
 }
 
 func NewDaemon(ctx context.Context, cfg Config) (*Daemon, error) {
+	var ath auth.Authenticator
+	if cfg.Auth.Disable {
+		ath = auth.NewDisabledAuthenticator()
+	} else {
+		pk, err := auth.LoadPublicKey(cfg.Auth.PublicKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("load key: %w", err)
+		}
+		ath = auth.NewStaticAuthenticator(pk)
+	}
+
 	mig, err := migrations.NewMigration(ctx, cfg.Database.DBS)
 	if err != nil {
 		return nil, fmt.Errorf("new migration: %w", err)
@@ -45,7 +57,7 @@ func NewDaemon(ctx context.Context, cfg Config) (*Daemon, error) {
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(logging.UnaryInterceptor(logging.L(ctx))),
 	)
-	standup.RegisterStandupServer(grpcServer, grpcserver.NewService(repo))
+	standup.RegisterStandupServer(grpcServer, grpcserver.NewService(repo, ath))
 
 	return &Daemon{
 		cfg:  cfg,

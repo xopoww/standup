@@ -8,4 +8,9 @@ type Config struct {
 	Service struct {
 		Addr string `yaml:"addr" validate:"required,hostname_port"`
 	} `yaml:"service" validate:"required"`
+
+	Auth struct {
+		Disable       bool   `yaml:"disable"`
+		PublicKeyFile string `yaml:"public_key_file" validate:"required_without=Disable"`
+	} `yaml:"auth" validate:"required"`
 }

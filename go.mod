@@ -29,6 +29,7 @@ require (
 
 require (
 	github.com/go-playground/validator/v10 v10.15.5
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/jackc/pgx/v5 v5.4.3
