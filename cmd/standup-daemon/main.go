@@ -3,48 +3,38 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
-	"net"
 
-	"github.com/xopoww/standup/internal/grpcserver"
-	"github.com/xopoww/standup/internal/repository/pg"
-	"github.com/xopoww/standup/internal/repository/pg/migrations"
-	"github.com/xopoww/standup/pkg/api/standup"
-	"google.golang.org/grpc"
+	"github.com/xopoww/standup/internal/daemon"
+	"github.com/xopoww/standup/pkg/config"
 )
 
-func main() {
-	port := flag.Uint("port", 65000, "tcp port")
-	dbs := flag.String("dbs", "", "DBS")
-	flag.Parse()
+var args struct {
+	cfgPath string
+}
 
-	if *dbs == "" {
-		log.Fatal("dbs must be specified")
+func main() {
+	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
+	flag.Parse()
+	if args.cfgPath == "" {
+		log.Fatal("`config` must be specified")
+	}
+
+	var cfg daemon.Config
+	err := config.LoadFile(args.cfgPath, &cfg)
+	if err != nil {
+		log.Fatalf("Load config: %s.", err)
 	}
 
 	ctx := context.Background()
-
-	mig, err := migrations.NewMigration(ctx, *dbs)
+	d, err := daemon.NewDaemon(ctx, cfg)
 	if err != nil {
-		log.Fatal(err)
-	}
-	err = mig.Up()
-	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Init daemon: %s.", err)
 	}
 
-	repo, err := pg.NewRepository(ctx, *dbs)
-	if err != nil {
-		log.Fatal(err)
+	if err := d.Start(); err != nil {
+		log.Fatalf("Daemon terminated with error: %s.", err)
+	} else {
+		log.Printf("Daemon stopped.")
 	}
-	defer repo.Close(ctx)
-
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	grpcServer := grpc.NewServer()
-	standup.RegisterStandupServer(grpcServer, grpcserver.NewService(repo))
-	log.Fatal(grpcServer.Serve(lis))
 }

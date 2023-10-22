@@ -9,4 +9,5 @@ import (
 
 func TestGenerate(t *testing.T) {
 	require.Equal(t, 16, len(identifiers.GenerateID()))
+	require.Equal(t, 8, len(identifiers.GenerateShortID()))
 }

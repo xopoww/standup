@@ -14,3 +14,9 @@ func GenerateID() string {
 	binary.BigEndian.PutUint64(buf[:], rng.Uint64())
 	return hex.EncodeToString(buf[:])
 }
+
+func GenerateShortID() string {
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[:], rng.Uint32())
+	return hex.EncodeToString(buf[:])
+}
