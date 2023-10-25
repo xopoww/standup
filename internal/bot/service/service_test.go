@@ -6,7 +6,6 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/bot/service"
 	"github.com/xopoww/standup/internal/bot/tg"
@@ -18,13 +17,12 @@ func TestEcho(t *testing.T) {
 	defer cancel()
 	ctx = logging.WithLogger(ctx, logging.NewLogger())
 
-	mb := tg.NewMockBot()
-	defer mb.AssertExpectations(t)
+	bot, client := tg.NewMockBot()
+	s, err := service.NewService(logging.L(ctx), bot)
+	require.NoError(t, err)
 
-	s, err := service.NewService(logging.L(ctx), mb)
 	go s.Start()
 	defer s.Stop()
-	require.NoError(t, err)
 
 	incoming := tgbotapi.Message{
 		MessageID: 10,
@@ -34,15 +32,9 @@ func TestEcho(t *testing.T) {
 		Text: "Test text",
 	}
 
-	mb.On("Send", mock.MatchedBy(func(c tgbotapi.Chattable) bool {
-		msg, ok := c.(tgbotapi.MessageConfig)
-		if !ok {
-			return false
-		}
-		return msg.Text == incoming.Text &&
-			msg.ChatID == incoming.Chat.ID &&
-			msg.ReplyToMessageID == incoming.MessageID
-	})).Return(tgbotapi.Message{MessageID: 20}, nil)
-
-	mb.AddUpdate(ctx, t, tgbotapi.Update{Message: &incoming})
+	client.SendMessage(ctx, t, incoming)
+	reply := client.RecvMessage(ctx, t)
+	require.Equal(t, incoming.Text, reply.Text)
+	require.Equal(t, incoming.Chat.ID, reply.ChatID)
+	require.Equal(t, incoming.MessageID, reply.ReplyToMessageID)
 }
