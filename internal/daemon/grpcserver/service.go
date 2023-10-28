@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/xopoww/standup/internal/auth"
+	"github.com/xopoww/standup/internal/daemon/models"
 	"github.com/xopoww/standup/internal/logging"
-	"github.com/xopoww/standup/internal/models"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/identifiers"
 	"google.golang.org/grpc/codes"

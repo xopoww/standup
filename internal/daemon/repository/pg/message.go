@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xopoww/standup/internal/models"
+	"github.com/xopoww/standup/internal/daemon/models"
 )
 
 func (r *repository) CreateMessage(ctx context.Context, msg *models.Message) error {

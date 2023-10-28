@@ -8,11 +8,11 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/xopoww/standup/internal/auth"
-	"github.com/xopoww/standup/internal/grpcserver"
+	"github.com/xopoww/standup/internal/daemon/grpcserver"
+	"github.com/xopoww/standup/internal/daemon/models"
+	"github.com/xopoww/standup/internal/daemon/repository/pg"
+	"github.com/xopoww/standup/internal/daemon/repository/pg/migrations"
 	"github.com/xopoww/standup/internal/logging"
-	"github.com/xopoww/standup/internal/models"
-	"github.com/xopoww/standup/internal/repository/pg"
-	"github.com/xopoww/standup/internal/repository/pg/migrations"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"google.golang.org/grpc"
 )

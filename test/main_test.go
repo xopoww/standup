@@ -14,7 +14,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/auth"
-	"github.com/xopoww/standup/internal/grpcserver"
 	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/internal/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
@@ -127,5 +126,5 @@ func withToken(ctx context.Context, t *testing.T, subjectID string) context.Cont
 	now := time.Now()
 	token, err := auth.IssueToken(subjectID, now, now.Add(time.Hour), deps.jwtPrivateKey)
 	require.NoError(t, err)
-	return metadata.AppendToOutgoingContext(ctx, grpcserver.MetadataTokenKey, token)
+	return metadata.AppendToOutgoingContext(ctx, auth.GRPCMetadataTokenKey, token)
 }

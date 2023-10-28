@@ -7,8 +7,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/bot/tg"
-	"github.com/xopoww/standup/internal/grpcserver"
 	"github.com/xopoww/standup/internal/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"google.golang.org/grpc/metadata"
@@ -20,7 +20,7 @@ func TestAddMessage(t *testing.T) {
 		const id = "01234567890abcde"
 
 		sc.On("CreateMessage", testutil.OutgoingMetadata(func(md metadata.MD) bool {
-			v := md.Get(grpcserver.MetadataTokenKey)
+			v := md.Get(auth.GRPCMetadataTokenKey)
 			return len(v) > 0 && v[0] == TestUserName+"_token"
 		}), mock.MatchedBy(func(req *standup.CreateMessageRequest) bool {
 			return req.GetOwnerId() == TestUserName &&

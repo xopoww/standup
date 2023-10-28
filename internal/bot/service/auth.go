@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/xopoww/standup/internal/grpcserver"
+	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/logging"
 	"google.golang.org/grpc/metadata"
 )
@@ -21,5 +21,5 @@ func (s *Service) issueToken(ctx context.Context, user string, ttl time.Duration
 		return ctx, err
 	}
 	logging.L(ctx).Sugar().Debugf("Issued token for user %q valid until %s.", user, eat)
-	return metadata.AppendToOutgoingContext(ctx, grpcserver.MetadataTokenKey, token), nil
+	return metadata.AppendToOutgoingContext(ctx, auth.GRPCMetadataTokenKey, token), nil
 }

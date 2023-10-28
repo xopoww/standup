@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xopoww/standup/internal/models"
+	"github.com/xopoww/standup/internal/daemon/models"
 )
 
 type repository struct {
