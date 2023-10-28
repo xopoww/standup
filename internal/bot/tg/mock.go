@@ -16,7 +16,7 @@ type MockBot struct {
 }
 
 func NewMockBot() (MockBot, MockBotClient) {
-	cc := make(chan tgbotapi.Chattable)
+	cc := make(chan tgbotapi.Chattable, 1)
 	uc := make(chan tgbotapi.Update)
 	return MockBot{cc, uc}, MockBotClient{cc, uc}
 }
@@ -65,6 +65,10 @@ func (c MockBotClient) RecvMessage(ctx context.Context, t *testing.T) tgbotapi.M
 	msg, ok := c.Recv(ctx, t).(tgbotapi.MessageConfig)
 	require.True(t, ok, "Wrong tgbotapi.Chattable received")
 	return msg
+}
+
+func (c MockBotClient) RequireEmpty(t *testing.T) {
+	require.Zero(t, len(c.cc), "MockBot should have no outgoing messages")
 }
 
 func (c MockBotClient) SendUpdate(ctx context.Context, t *testing.T, u tgbotapi.Update) {

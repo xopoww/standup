@@ -3,38 +3,42 @@ package service_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/xopoww/standup/internal/bot/service"
 	"github.com/xopoww/standup/internal/bot/tg"
-	"github.com/xopoww/standup/internal/logging"
+	"github.com/xopoww/standup/internal/grpcserver"
+	"github.com/xopoww/standup/internal/testutil"
+	"github.com/xopoww/standup/pkg/api/standup"
+	"google.golang.org/grpc/metadata"
 )
 
-func TestEcho(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-	defer cancel()
-	ctx = logging.WithLogger(ctx, logging.NewLogger())
+func TestAddMessage(t *testing.T) {
+	RunTest("default", t, func(ctx context.Context, t *testing.T, bot tg.MockBot, bc tg.MockBotClient, sc *testutil.MockStandupClient) {
+		const text = "Test text of the message."
+		const id = "01234567890abcde"
 
-	bot, client := tg.NewMockBot()
-	s, err := service.NewService(logging.L(ctx), bot)
-	require.NoError(t, err)
+		sc.On("CreateMessage", testutil.OutgoingMetadata(func(md metadata.MD) bool {
+			v := md.Get(grpcserver.MetadataTokenKey)
+			return len(v) > 0 && v[0] == TestUserName+"_token"
+		}), mock.MatchedBy(func(req *standup.CreateMessageRequest) bool {
+			return req.GetOwnerId() == TestUserName &&
+				req.GetText() == text
+		})).Return(&standup.CreateMessageResponse{Id: id}, nil)
 
-	go s.Start()
-	defer s.Stop()
+		msg := NewIncomingMessage(text)
+		bc.SendMessage(ctx, t, msg)
+		reply := bc.RecvMessage(ctx, t)
+		require.Equal(t, msg.Chat.ID, reply.ChatID)
+		require.Equal(t, msg.MessageID, reply.ReplyToMessageID)
+		require.Contains(t, reply.Text, id)
+	})
 
-	incoming := tgbotapi.Message{
-		MessageID: 10,
-		Chat: &tgbotapi.Chat{
-			ID: 100,
-		},
-		Text: "Test text",
-	}
+	RunTest("not_textual", t, func(ctx context.Context, t *testing.T, bot tg.MockBot, bc tg.MockBotClient, sc *testutil.MockStandupClient) {
+		msg := NewIncomingMessage("")
+		msg.Sticker = &tgbotapi.Sticker{}
 
-	client.SendMessage(ctx, t, incoming)
-	reply := client.RecvMessage(ctx, t)
-	require.Equal(t, incoming.Text, reply.Text)
-	require.Equal(t, incoming.Chat.ID, reply.ChatID)
-	require.Equal(t, incoming.MessageID, reply.ReplyToMessageID)
+		bc.SendMessage(ctx, t, msg)
+	})
 }
