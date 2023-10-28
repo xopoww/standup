@@ -27,7 +27,13 @@ func RunTest(name string, t *testing.T, f func(ctx context.Context, t *testing.T
 
 		bot, bc := tg.NewMockBot()
 		defer bc.RequireEmpty(tt)
-		srv, err := service.NewService(logging.L(ctx), bot, sc, TestIssuer{})
+		cfg := service.Config{WhitelistEnabled: false}
+		srv, err := service.NewService(logging.L(ctx), cfg, service.Deps{
+			Bot:    bot,
+			Repo:   nil,
+			Client: sc,
+			Issuer: TestIssuer{},
+		})
 		require.NoError(t, err)
 
 		srv.Start()

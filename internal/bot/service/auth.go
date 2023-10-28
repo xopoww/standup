@@ -16,7 +16,7 @@ const (
 func (s *Service) issueToken(ctx context.Context, user string, ttl time.Duration) (context.Context, error) {
 	nb := time.Now().UTC()
 	eat := nb.Add(ttl)
-	token, err := s.i.IssueToken(user, nb, eat)
+	token, err := s.deps.Issuer.IssueToken(user, nb, eat)
 	if err != nil {
 		return ctx, err
 	}

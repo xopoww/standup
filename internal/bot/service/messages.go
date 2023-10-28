@@ -40,7 +40,7 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 		return fmt.Errorf("issue token: %w", err)
 	}
 
-	rsp, err := s.sc.ListMessages(ctx, &standup.ListMessagesRequest{
+	rsp, err := s.deps.Client.ListMessages(ctx, &standup.ListMessagesRequest{
 		OwnerId: "",
 		From:    timestamppb.New(from),
 		To:      timestamppb.New(to),
@@ -49,7 +49,7 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 		return fmt.Errorf("list messages: %w", err)
 	}
 
-	_, err = s.b.Send(tgbotapi.NewMessage(tm.Chat.ID, formatting.FormatMessages("Report", rsp.GetMessages())))
+	_, err = s.deps.Bot.Send(tgbotapi.NewMessage(tm.Chat.ID, formatting.FormatMessages("Report", rsp.GetMessages())))
 	if err != nil {
 		return fmt.Errorf("send reply: %w", err)
 	}
@@ -66,7 +66,7 @@ func (s *Service) addMessage(ctx context.Context, tm tgbotapi.Message) (err erro
 		return fmt.Errorf("issue token: %w", err)
 	}
 
-	rsp, err := s.sc.CreateMessage(ctx, &standup.CreateMessageRequest{
+	rsp, err := s.deps.Client.CreateMessage(ctx, &standup.CreateMessageRequest{
 		Text:    tm.Text,
 		OwnerId: tm.From.UserName,
 	})
@@ -74,7 +74,7 @@ func (s *Service) addMessage(ctx context.Context, tm tgbotapi.Message) (err erro
 		return fmt.Errorf("create message: %w", err)
 	}
 
-	_, err = s.b.Send(tg.NewReplyf(tm, "Created message %q.", rsp.GetId()))
+	_, err = s.deps.Bot.Send(tg.NewReplyf(tm, "Created message %q.", rsp.GetId()))
 	if err != nil {
 		return fmt.Errorf("send reply: %w", err)
 	}

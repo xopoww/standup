@@ -17,28 +17,34 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type Deps struct {
+	Bot    tg.Bot
+	Repo   Repository
+	Client standup.StandupClient
+	Issuer auth.Issuer
+}
+
 type Service struct {
-	b      tg.Bot
 	logger *zap.Logger
 	wg     sync.WaitGroup
 
-	sc standup.StandupClient
-	i  auth.Issuer
+	cfg  Config
+	deps Deps
 }
 
-func NewService(logger *zap.Logger, bot tg.Bot, sc standup.StandupClient, i auth.Issuer) (*Service, error) {
-	return &Service{b: bot, logger: logger, sc: sc, i: i}, nil
+func NewService(logger *zap.Logger, cfg Config, deps Deps) (*Service, error) {
+	return &Service{logger: logger, cfg: cfg, deps: deps}, nil
 }
 
 func (s *Service) Start() {
 	for i := 0; i < 1; i++ {
 		s.wg.Add(1)
-		go s.worker(s.b.Updates())
+		go s.worker(s.deps.Bot.Updates())
 	}
 }
 
 func (s *Service) Stop() {
-	s.b.Stop()
+	s.deps.Bot.Stop()
 	s.wg.Wait()
 }
 
@@ -74,6 +80,22 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 	}
 	msg := *u.Message
 
+	if s.cfg.WhitelistEnabled {
+		allowed, err := s.deps.Repo.CheckWhitelist(ctx, msg.From.UserName)
+		// do not report errs to unverified users
+		if err != nil {
+			return fmt.Errorf("check whitelist: %w", err)
+		}
+		if !allowed {
+			logging.L(ctx).Sugar().Debugf("User %q is not in whitelist, access denied.", msg.From.UserName)
+			_, err = s.deps.Bot.Send(tg.NewReplyf(msg, "Bot usage is currently restricted."))
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
 	var err error
 	switch cmd := msg.Command(); cmd {
 	case "":
@@ -89,19 +111,19 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 
 	serr := SyntaxError{}
 	if errors.As(err, &serr) {
-		_, rerr := s.b.Send(tg.NewReplyf(msg, "Invalid command: %s.", serr.Error()))
+		_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Invalid command: %s.", serr.Error()))
 		return rerr
 	}
 
 	if st, ok := status.FromError(err); ok {
 		switch st.Code() {
 		case codes.PermissionDenied:
-			_, rerr := s.b.Send(tg.NewReplyf(msg, "Permission denied."))
+			_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Permission denied."))
 			return rerr
 		}
 	}
 
-	_, rerr := s.b.Send(tg.NewReplyf(msg, "Internal error occured."))
+	_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Internal error occured."))
 	if rerr != nil {
 		err = fmt.Errorf("send reply: %w (while handling error: %s)", rerr, err)
 	}
