@@ -2,16 +2,13 @@ package daemon
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 
-	"github.com/golang-migrate/migrate/v4"
 	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/daemon/grpcserver"
 	"github.com/xopoww/standup/internal/daemon/models"
 	"github.com/xopoww/standup/internal/daemon/repository/pg"
-	"github.com/xopoww/standup/internal/daemon/repository/pg/migrations"
 	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"google.golang.org/grpc"
@@ -34,19 +31,6 @@ func NewDaemon(ctx context.Context, cfg Config) (*Daemon, error) {
 			return nil, fmt.Errorf("load key: %w", err)
 		}
 		ath = auth.NewStaticAuthenticator(pk)
-	}
-
-	mig, err := migrations.NewMigration(ctx, cfg.Database.DBS)
-	if err != nil {
-		return nil, fmt.Errorf("new migration: %w", err)
-	}
-	mig.Log = logging.MigrateLogger(logging.L(ctx), true)
-	err = mig.Up()
-	if errors.Is(err, migrate.ErrNoChange) {
-		err = nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("migrate up: %w", err)
 	}
 
 	repo, err := pg.NewRepository(ctx, cfg.Database.DBS)

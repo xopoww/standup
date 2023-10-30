@@ -22,7 +22,6 @@ fi
 
 tmux new-session -d ; $sleep
 tmux rename-window entrypoint
-tmux send-keys "go test ./test -v -config <(envsubst < ./test/configs/test_config.yaml)"
 
 tmux new-window -n "daemon" ; $sleep
 tmux send-keys "cd ./cmd/standup-daemon" Enter
@@ -33,5 +32,11 @@ tmux send-keys "docker run --rm --name $POSTGRES_CONTAINTER \
     -p5432:5432 -e POSTGRES_PASSWORD=postgres \
     postgres" Enter
 
+$sleep
+
 tmux select-window -t 0
+tmux send-keys "make standupctl" Enter
+tmux send-keys "./bin/standupctl db migrate up --dbs $(yq .database.dbs ./test/configs/test_config.yaml) -v" Enter
+tmux send-keys "go test ./test -v -config <(envsubst < ./test/configs/test_config.yaml)"
+
 tmux a
