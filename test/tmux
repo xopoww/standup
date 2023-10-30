@@ -1,0 +1,37 @@
+#!/bin/bash
+
+cd "$(dirname "$0")/.."
+STANDUP_ROOT="$(pwd)"; export STANDUP_ROOT
+
+sleep="sleep 0.3"
+
+POSTGRES_CONTAINTER="standup-postgres"
+
+if [ "$1" = "kill" ]; then
+    tmux kill-server
+    docker kill "$POSTGRES_CONTAINTER"
+    exit 0
+fi
+
+set -eu
+
+if tmux has-session 2>/dev/null; then
+    echo "The session already exists, run '$0 kill' to kill it."
+    exit 1
+fi
+
+tmux new-session -d ; $sleep
+tmux rename-window entrypoint
+tmux send-keys "go test ./test -v -config <(envsubst < ./test/configs/test_config.yaml)"
+
+tmux new-window -n "daemon" ; $sleep
+tmux send-keys "cd ./cmd/standup-daemon" Enter
+tmux send-keys "go run -race . -config <(envsubst < ../../test/configs/daemon_config.yaml)" Enter
+
+tmux new-window -n "db" ; $sleep
+tmux send-keys "docker run --rm --name $POSTGRES_CONTAINTER \
+    -p5432:5432 -e POSTGRES_PASSWORD=postgres \
+    postgres" Enter
+
+tmux select-window -t 0
+tmux a

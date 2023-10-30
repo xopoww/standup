@@ -1,0 +1,11 @@
+database:
+  dbs:
+    postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+
+standup:
+  addr:
+    localhost:65000
+
+auth:
+  enabled: true
+  private_key_file: $STANDUP_ROOT/dev/keys/private.ec.key
