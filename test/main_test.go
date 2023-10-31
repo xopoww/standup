@@ -37,10 +37,7 @@ type Config struct {
 	} `yaml:"auth"`
 }
 
-var args struct {
-	cfgPath string
-}
-
+//nolint:gochecknoglobals // test deps can be global
 var deps struct {
 	cfg *Config
 
@@ -51,27 +48,33 @@ var deps struct {
 	jwtPrivateKey *ecdsa.PrivateKey
 }
 
-func runTests(m *testing.M) error {
+func runTests(m *testing.M) (int, error) {
+	var args struct {
+		cfgPath string
+	}
+
 	deps.logger = logging.NewLogger()
-	defer deps.logger.Sync()
+	defer func() {
+		_ = deps.logger.Sync()
+	}()
 
 	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
 	flag.Parse()
 	if args.cfgPath == "" {
-		return errors.New("`config` must be specified")
+		return 0, errors.New("`config` must be specified")
 	}
 
 	var cfg Config
 	err := config.LoadFile(args.cfgPath, &cfg)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return 0, fmt.Errorf("load config: %w", err)
 	}
 	deps.cfg = &cfg
 
 	if cfg.Auth.Enabled {
 		pk, err := auth.LoadPrivateKey(cfg.Auth.PrivateKeyFile)
 		if err != nil {
-			return fmt.Errorf("load private key: %w", err)
+			return 0, fmt.Errorf("load private key: %w", err)
 		}
 		deps.jwtPrivateKey = pk
 	}
@@ -81,31 +84,32 @@ func runTests(m *testing.M) error {
 		grpc.WithUnaryInterceptor(logging.UnaryClientInterceptor(deps.logger)),
 	)
 	if err != nil {
-		return fmt.Errorf("grpc dial: %w", err)
+		return 0, fmt.Errorf("grpc dial: %w", err)
 	}
 	deps.client = standup.NewStandupClient(conn)
 
 	db, err := pgx.Connect(context.TODO(), cfg.Database.DBS)
 	if err != nil {
-		return fmt.Errorf("db connect: %w", err)
+		return 0, fmt.Errorf("db connect: %w", err)
 	}
 	defer db.Close(context.TODO())
 	deps.db = db
 
-	if rc := m.Run(); rc != 0 {
-		log.Printf("Tests finished with code %d.", rc)
-		os.Exit(rc)
-	}
-	return nil
+	return m.Run(), nil
 }
 
 func TestMain(m *testing.M) {
-	if err := runTests(m); err != nil {
+	if rc, err := runTests(m); err != nil {
 		log.Fatalf("Fatal error: %s.", err)
+	} else if rc != 0 {
+		log.Printf("Tests returned code %d.", rc)
+		os.Exit(rc)
 	}
 }
 
-func RunTest(t *testing.T, name string, f func(context.Context, *testing.T), opts ...func(context.Context) context.Context) {
+type testFunc func(context.Context, *testing.T)
+
+func RunTest(t *testing.T, name string, f testFunc, opts ...func(context.Context) context.Context) {
 	ctx, cancel := testutil.NewContext(context.Background())
 	defer cancel()
 	ctx = logging.WithLogger(ctx, deps.logger)

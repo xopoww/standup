@@ -41,7 +41,7 @@ func (r *repository) GetMessage(ctx context.Context, id string) (*models.Message
 	return msg, nil
 }
 
-func (r *repository) ListMessages(ctx context.Context, ownerID string, from time.Time, to time.Time) ([]*models.Message, error) {
+func (r *repository) ListMessages(ctx context.Context, ownerID string, from, to time.Time) ([]*models.Message, error) {
 	const stmt = "list_messages"
 	_, err := r.conn.Prepare(ctx, stmt,
 		"SELECT id, content, created_at FROM messages WHERE owner_id = $1 AND created_at >= $2 AND created_at < $3",
@@ -54,7 +54,6 @@ func (r *repository) ListMessages(ctx context.Context, ownerID string, from time
 	if err != nil {
 		return nil, fmt.Errorf("query: %w", err)
 	}
-	defer rows.Close()
 	var result []*models.Message
 	for rows.Next() {
 		msg := &models.Message{OwnerID: ownerID}
@@ -64,5 +63,5 @@ func (r *repository) ListMessages(ctx context.Context, ownerID string, from time
 		}
 		result = append(result, msg)
 	}
-	return result, nil
+	return result, rows.Err()
 }

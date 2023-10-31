@@ -18,14 +18,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var args struct {
-	cfgPath string
-	devel   bool
-}
-
 func main() {
+	var args struct {
+		cfgPath string
+		devel   bool
+	}
+
 	logger := logging.NewLogger()
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
 	flag.BoolVar(&args.devel, "devel", false, "enable development mode")

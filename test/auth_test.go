@@ -26,7 +26,7 @@ func TestAuth(t *testing.T) {
 		_, err = deps.client.CreateMessage(ctx, testutil.CreateMessageRequest(ctx))
 		testutil.RequireErrCode(t, codes.PermissionDenied, err)
 
-		_, err = deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: msg.Id})
+		_, err = deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: msg.GetId()})
 		testutil.RequireErrCode(t, codes.PermissionDenied, err)
 
 		_, err = deps.client.ListMessages(ctx, &standup.ListMessagesRequest{

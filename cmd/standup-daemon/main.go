@@ -9,13 +9,15 @@ import (
 	"github.com/xopoww/standup/pkg/config"
 )
 
-var args struct {
-	cfgPath string
-}
-
 func main() {
+	var args struct {
+		cfgPath string
+	}
+
 	logger := logging.NewLogger()
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
 	flag.Parse()

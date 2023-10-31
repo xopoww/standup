@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ShortTTl = time.Minute * 5
+	ShortTTL = time.Minute * 5
 )
 
 func (s *Service) issueToken(ctx context.Context, user string, ttl time.Duration) (context.Context, error) {

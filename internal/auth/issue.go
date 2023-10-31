@@ -3,7 +3,7 @@ package auth
 import "time"
 
 type Issuer interface {
-	IssueToken(subjectId string, notBefore, expiresAt time.Time) (string, error)
+	IssueToken(subjectID string, notBefore, expiresAt time.Time) (string, error)
 }
 
 type staticIssuer struct {
@@ -14,6 +14,6 @@ func NewStaticIssuer(pk any) Issuer {
 	return &staticIssuer{privateKey: pk}
 }
 
-func (i *staticIssuer) IssueToken(subjectId string, notBefore, expiresAt time.Time) (string, error) {
-	return IssueToken(subjectId, notBefore, expiresAt, i.privateKey)
+func (i *staticIssuer) IssueToken(subjectID string, notBefore, expiresAt time.Time) (string, error) {
+	return IssueToken(subjectID, notBefore, expiresAt, i.privateKey)
 }

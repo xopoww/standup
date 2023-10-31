@@ -1,22 +1,34 @@
 package identifiers
 
 import (
-	"encoding/binary"
+	"crypto/rand"
 	"encoding/hex"
-	"math/rand"
-	"time"
+	"errors"
 )
 
-var rng = rand.New(rand.NewSource(time.Now().Unix()))
+// var rng = rand.New(rand.NewSource(time.Now().Unix()))
 
-func GenerateID() string {
-	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], rng.Uint64())
-	return hex.EncodeToString(buf[:])
+func generate(length int) (string, error) {
+	if length%2 != 0 {
+		return "", errors.New("length must be even")
+	}
+	buf := make([]byte, length/2)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf), nil
 }
 
-func GenerateShortID() string {
-	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[:], rng.Uint32())
-	return hex.EncodeToString(buf[:])
+const (
+	IDLength      = 16
+	ShortIDLength = 8
+)
+
+func GenerateID() (string, error) {
+	return generate(IDLength)
+}
+
+func GenerateShortID() (string, error) {
+	return generate(ShortIDLength)
 }

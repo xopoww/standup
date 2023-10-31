@@ -22,10 +22,10 @@ func TestCreateMessage(t *testing.T) {
 		require.NoError(t, err)
 
 		var content, owner string
-		row := deps.db.QueryRow(ctx, "SELECT content, owner_id FROM messages WHERE id = $1", rsp.Id)
+		row := deps.db.QueryRow(ctx, "SELECT content, owner_id FROM messages WHERE id = $1", rsp.GetId())
 		require.NoError(t, row.Scan(&content, &owner))
-		require.Equal(t, req.Text, content)
-		require.Equal(t, req.OwnerId, owner)
+		require.Equal(t, req.GetText(), content)
+		require.Equal(t, req.GetOwnerId(), owner)
 	})
 }
 
@@ -37,16 +37,17 @@ func TestGetMessage(t *testing.T) {
 		rsp, err := deps.client.CreateMessage(ctx, req)
 		require.NoError(t, err)
 
-		msg, err := deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: rsp.Id})
+		msg, err := deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: rsp.GetId()})
 		require.NoError(t, err)
-		require.Equal(t, req.Text, msg.Message.Text)
-		require.Equal(t, req.OwnerId, msg.Message.OwnerId)
+		require.Equal(t, req.GetText(), msg.GetMessage().GetText())
+		require.Equal(t, req.GetOwnerId(), msg.GetMessage().GetOwnerId())
 	})
 
 	RunTest(t, "not_found", func(ctx context.Context, t *testing.T) {
 		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
-
-		_, err := deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: identifiers.GenerateID()})
+		id, err := identifiers.GenerateID()
+		require.NoError(t, err)
+		_, err = deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: id})
 		testutil.RequireErrCode(t, codes.NotFound, err)
 	})
 }
@@ -61,7 +62,7 @@ func TestListMessages(t *testing.T) {
 			req := testutil.CreateMessageRequest(ctx)
 			rsp, err := deps.client.CreateMessage(ctx, req)
 			require.NoError(t, err)
-			expected[i] = rsp.Id
+			expected[i] = rsp.GetId()
 		}
 
 		rsp, err := deps.client.ListMessages(ctx, &standup.ListMessagesRequest{
@@ -71,8 +72,8 @@ func TestListMessages(t *testing.T) {
 		})
 		require.NoError(t, err)
 		var actual []string
-		for _, msg := range rsp.Messages {
-			actual = append(actual, msg.Id)
+		for _, msg := range rsp.GetMessages() {
+			actual = append(actual, msg.GetId())
 		}
 		require.Equal(t, expected, actual)
 	})
@@ -96,19 +97,19 @@ func TestListMessages(t *testing.T) {
 			To:      timestamppb.New(to),
 		})
 		require.NoError(t, err)
-		require.Equal(t, 1, len(rsp.Messages))
-		require.Equal(t, msg.Id, rsp.Messages[0].Id)
+		require.Len(t, rsp.GetMessages(), 1)
+		require.Equal(t, msg.GetId(), rsp.GetMessages()[0].GetId())
 	})
 
 	RunTest(t, "another_owner", func(ctx context.Context, t *testing.T) {
 		from := time.Now()
 
 		req := testutil.CreateMessageRequest(ctx)
-		msg, err := deps.client.CreateMessage(withToken(ctx, t, req.OwnerId), req)
+		msg, err := deps.client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
 		require.NoError(t, err)
 
-		req.OwnerId = "another-" + req.OwnerId
-		_, err = deps.client.CreateMessage(withToken(ctx, t, req.OwnerId), req)
+		req.OwnerId = "another-" + req.GetOwnerId()
+		_, err = deps.client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
 		require.NoError(t, err)
 
 		rsp, err := deps.client.ListMessages(withToken(ctx, t, testutil.OwnerID(ctx)), &standup.ListMessagesRequest{
@@ -117,8 +118,8 @@ func TestListMessages(t *testing.T) {
 			To:      timestamppb.Now(),
 		})
 		require.NoError(t, err)
-		require.Equal(t, 1, len(rsp.Messages))
-		require.Equal(t, msg.Id, rsp.Messages[0].Id)
+		require.Len(t, rsp.GetMessages(), 1)
+		require.Equal(t, msg.GetId(), rsp.GetMessages()[0].GetId())
 	})
 
 	RunTest(t, "empty", func(ctx context.Context, t *testing.T) {
@@ -129,6 +130,6 @@ func TestListMessages(t *testing.T) {
 			To:      timestamppb.New(time.Now().Add(time.Hour)),
 		})
 		require.NoError(t, err)
-		require.Equal(t, 0, len(rsp.Messages))
+		require.Empty(t, rsp.GetMessages())
 	})
 }
