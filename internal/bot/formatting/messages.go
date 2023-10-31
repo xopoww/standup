@@ -10,10 +10,10 @@ import (
 func FormatMessages(header string, msgs []*standup.Message) string {
 	bldr := &strings.Builder{}
 	if header != "" {
-		_, _ = fmt.Fprintf(bldr, "**%s**\n\n", header)
+		_, _ = fmt.Fprintf(bldr, "*%s*\n\n", header)
 	}
 	for _, msg := range msgs {
-		_, _ = fmt.Fprintf(bldr, "- %s\n", msg.GetText())
+		_, _ = fmt.Fprintf(bldr, "\\- %s\n", msg.GetText())
 	}
 	return bldr.String()
 }

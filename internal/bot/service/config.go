@@ -1,5 +1,5 @@
 package service
 
 type Config struct {
-	WhitelistEnabled bool `yalm:"whitelist_enabled"`
+	WhitelistEnabled bool `yaml:"whitelist_enabled"`
 }

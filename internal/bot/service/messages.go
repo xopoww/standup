@@ -27,7 +27,7 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 	}
 	var to time.Time
 	if len(args) == 2 {
-		to, err = formatting.ParseTime(args[0], now)
+		to, err = formatting.ParseTime(args[1], now)
 		if err != nil {
 			return NewSyntaxError(err.Error())
 		}
@@ -41,7 +41,7 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 	}
 
 	rsp, err := s.deps.Client.ListMessages(ctx, &standup.ListMessagesRequest{
-		OwnerId: "",
+		OwnerId: tm.From.UserName,
 		From:    timestamppb.New(from),
 		To:      timestamppb.New(to),
 	})
@@ -49,7 +49,9 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 		return fmt.Errorf("list messages: %w", err)
 	}
 
-	_, err = s.deps.Bot.Send(tgbotapi.NewMessage(tm.Chat.ID, formatting.FormatMessages("Report", rsp.GetMessages())))
+	reply := tgbotapi.NewMessage(tm.Chat.ID, formatting.FormatMessages("Report", rsp.GetMessages()))
+	reply.ParseMode = "MarkdownV2"
+	_, err = s.deps.Bot.Send(reply)
 	if err != nil {
 		return fmt.Errorf("send reply: %w", err)
 	}

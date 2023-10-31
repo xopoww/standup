@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xopoww/standup/internal/logging"
@@ -18,16 +19,19 @@ type bot struct {
 }
 
 func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
-	token, err := os.ReadFile(cfg.TokenFile)
+	cfg.SetDefaults()
+
+	data, err := os.ReadFile(cfg.TokenFile)
 	if err != nil {
 		return nil, fmt.Errorf("read token: %w", err)
 	}
+	token := strings.TrimSpace(string(data))
 
 	tb, err := tgbotapi.NewBotAPI(string(token))
 	if err != nil {
 		return nil, fmt.Errorf("new bot api: %w", err)
 	}
-	tb.Debug = true
+	tb.Debug = devel
 	logging.L(ctx).Sugar().Infof("Authorized as %q.", tb.Self.UserName)
 
 	b := &bot{cfg: cfg, tb: tb}

@@ -1,4 +1,4 @@
-.PHONY : gomod generate-proto standup-daemon standupctl
+.PHONY : gomod generate-proto standup-daemon standupctl standup-bot
 
 gomod:
 	go mod tidy
@@ -14,3 +14,6 @@ standup-daemon: gomod
 
 standupctl: gomod
 	go build -o ./bin/standupctl ./cmd/standupctl
+
+standup-bot: gomod
+	go build -o ./bin/standup-bot ./cmd/standup-bot
