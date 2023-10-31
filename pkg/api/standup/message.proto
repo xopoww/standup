@@ -8,14 +8,37 @@ import "google/protobuf/timestamp.proto";
 message Message {
     string id = 1;
     string text = 2;
+    string owner_id = 3;
 
     google.protobuf.Timestamp created_at = 20;
 }
 
+
 message CreateMessageRequest {
     string text = 1;
+    string owner_id = 2;
 }
 
 message CreateMessageResponse {
     string id = 1;
+}
+
+
+message GetMessageRequest {
+    string id = 1;
+}
+
+message GetMessageResponse {
+    Message message = 1;
+}
+
+
+message ListMessagesRequest {
+    string owner_id = 1;
+    google.protobuf.Timestamp from = 2;
+    google.protobuf.Timestamp to = 3;
+}
+
+message ListMessagesResponse {
+    repeated Message messages = 1;
 }

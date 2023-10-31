@@ -1,24 +1,45 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
-	"log"
-	"net"
 
-	"github.com/xopoww/standup/internal/grpcserver"
-	"github.com/xopoww/standup/pkg/api/standup"
-	"google.golang.org/grpc"
+	"github.com/xopoww/standup/internal/daemon"
+	"github.com/xopoww/standup/internal/logging"
+	"github.com/xopoww/standup/pkg/config"
 )
 
 func main() {
-	port := flag.Uint("port", 65000, "tcp port")
-	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+	var args struct {
+		cfgPath string
 	}
-	grpcServer := grpc.NewServer()
-	standup.RegisterStandupServer(grpcServer, grpcserver.NewService())
-	log.Fatal(grpcServer.Serve(lis))
+
+	logger := logging.NewLogger()
+	defer func() {
+		_ = logger.Sync()
+	}()
+
+	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
+	flag.Parse()
+	if args.cfgPath == "" {
+		logger.Sugar().Fatal("`config` is required.")
+	}
+
+	var cfg daemon.Config
+	err := config.LoadFile(args.cfgPath, &cfg)
+	if err != nil {
+		logger.Sugar().Fatalf("Load config: %s.", err)
+	}
+
+	ctx := logging.WithLogger(context.Background(), logger)
+	d, err := daemon.NewDaemon(ctx, cfg)
+	if err != nil {
+		logger.Sugar().Fatalf("Init daemon: %s.", err)
+	}
+
+	if err := d.Start(ctx); err != nil {
+		logger.Sugar().Fatalf("Daemon terminated with error: %s.", err)
+	} else {
+		logger.Sugar().Info("Daemon stopped.")
+	}
 }
