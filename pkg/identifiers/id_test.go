@@ -8,6 +8,11 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	require.Equal(t, 16, len(identifiers.GenerateID()))
-	require.Equal(t, 8, len(identifiers.GenerateShortID()))
+	id, err := identifiers.GenerateID()
+	require.NoError(t, err)
+	require.Len(t, id, identifiers.IDLength)
+
+	id, err = identifiers.GenerateID()
+	require.NoError(t, err)
+	require.Len(t, id, identifiers.ShortIDLength)
 }

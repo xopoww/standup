@@ -35,7 +35,7 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 		to = now
 	}
 
-	ctx, err = s.issueToken(ctx, tm.From.UserName, ShortTTl)
+	ctx, err = s.issueToken(ctx, tm.From.UserName, ShortTTL)
 	if err != nil {
 		return fmt.Errorf("issue token: %w", err)
 	}
@@ -63,7 +63,7 @@ func (s *Service) addMessage(ctx context.Context, tm tgbotapi.Message) (err erro
 		return nil
 	}
 
-	ctx, err = s.issueToken(ctx, tm.From.UserName, ShortTTl)
+	ctx, err = s.issueToken(ctx, tm.From.UserName, ShortTTL)
 	if err != nil {
 		return fmt.Errorf("issue token: %w", err)
 	}

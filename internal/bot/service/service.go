@@ -49,10 +49,11 @@ func (s *Service) Stop() {
 }
 
 func (s *Service) worker(jobs <-chan tgbotapi.Update) {
+	const updateTimeout = 10 * time.Second
 	defer s.wg.Done()
 	for u := range jobs {
 		func() {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			ctx, cancel := context.WithTimeout(context.Background(), updateTimeout)
 			defer cancel()
 			ctx = logging.WithLogger(ctx, s.logger.With(
 				zap.String("upd", fmt.Sprintf("%08d", u.UpdateID)),
@@ -116,8 +117,7 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 	}
 
 	if st, ok := status.FromError(err); ok {
-		switch st.Code() {
-		case codes.PermissionDenied:
+		if st.Code() == codes.PermissionDenied {
 			_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Permission denied."))
 			return rerr
 		}
@@ -125,7 +125,7 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 
 	_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Internal error occured."))
 	if rerr != nil {
-		err = fmt.Errorf("send reply: %w (while handling error: %s)", rerr, err)
+		err = fmt.Errorf("send reply: %w (while handling error: %w)", rerr, err)
 	}
 	return err
 }

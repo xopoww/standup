@@ -14,12 +14,19 @@ import (
 	"github.com/xopoww/standup/internal/testutil"
 )
 
-func RunTest(name string, t *testing.T, f func(ctx context.Context, t *testing.T, bot tg.MockBot, bc tg.MockBotClient, sc *testutil.MockStandupClient)) {
+type testFunc func(
+	ctx context.Context, t *testing.T, bot tg.MockBot,
+	bc tg.MockBotClient, sc *testutil.MockStandupClient,
+)
+
+func RunTest(name string, t *testing.T, f testFunc) {
 	t.Run(name, func(tt *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 		defer cancel()
 		logger := logging.NewLogger()
-		defer logger.Sync()
+		defer func() {
+			_ = logger.Sync()
+		}()
 		ctx = logging.WithLogger(ctx, logger)
 
 		sc := &testutil.MockStandupClient{}
@@ -65,6 +72,6 @@ func NewIncomingMessage(text string) tgbotapi.Message {
 
 type TestIssuer struct{}
 
-func (i TestIssuer) IssueToken(subjectId string, notBefore, expiresAt time.Time) (string, error) {
-	return subjectId + "_token", nil
+func (i TestIssuer) IssueToken(subjectID string, _, _ time.Time) (string, error) {
+	return subjectID + "_token", nil
 }

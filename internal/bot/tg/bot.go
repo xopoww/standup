@@ -27,7 +27,7 @@ func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 	}
 	token := strings.TrimSpace(string(data))
 
-	tb, err := tgbotapi.NewBotAPI(string(token))
+	tb, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, fmt.Errorf("new bot api: %w", err)
 	}
@@ -38,7 +38,8 @@ func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 
 	switch {
 	case cfg.Poll != nil:
-		err = b.initLongPolling(ctx)
+		b.initLongPolling(ctx)
+		err = nil
 	default:
 		err = errors.New("invalid config: no update method")
 	}
@@ -49,12 +50,11 @@ func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 	return b, nil
 }
 
-func (b *bot) initLongPolling(ctx context.Context) error {
+func (b *bot) initLongPolling(ctx context.Context) {
 	uCfg := tgbotapi.NewUpdate(0)
 	uCfg.Timeout = int(b.cfg.Poll.Timeout)
 	logging.L(ctx).Sugar().Infof("Starting long polling (t/o %s) for updates...", b.cfg.Poll.Timeout)
 	b.uc = b.tb.GetUpdatesChan(uCfg)
-	return nil
 }
 
 func (b *bot) Updates() tgbotapi.UpdatesChannel {

@@ -10,11 +10,11 @@ import (
 
 var signingMethod = jwt.SigningMethodES256
 
-func IssueToken(subjectId string, notBefore, expiresAt time.Time, privateKey any) (string, error) {
+func IssueToken(subjectID string, notBefore, expiresAt time.Time, privateKey any) (string, error) {
 	now := time.Now()
 	c := &jwt.RegisteredClaims{
 		Issuer:    "",
-		Subject:   subjectId,
+		Subject:   subjectID,
 		Audience:  []string{},
 		ExpiresAt: jwt.NewNumericDate(expiresAt),
 		NotBefore: jwt.NewNumericDate(notBefore),
@@ -25,7 +25,7 @@ func IssueToken(subjectId string, notBefore, expiresAt time.Time, privateKey any
 	return token.SignedString(privateKey)
 }
 
-func ValidateToken(raw string, publicKey any) (subjectId string, err error) {
+func ValidateToken(raw string, publicKey any) (subjectID string, err error) {
 	token, err := jwt.ParseWithClaims(raw, &jwt.RegisteredClaims{},
 		func(t *jwt.Token) (interface{}, error) { return publicKey, nil },
 		jwt.WithValidMethods([]string{signingMethod.Name}),

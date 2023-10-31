@@ -31,12 +31,12 @@ func up() *cobra.Command {
 			if errors.Is(err, migrate.ErrNoChange) {
 				err = nil
 			}
-			return nil
+			return err
 		},
 	}
 	cmd.Flags().StringVar(&args.dbs, "dbs", "", "database connection string")
 	cmd.Flags().BoolVarP(&args.verbose, "verbose", "v", false, "")
-	cmd.MarkFlagRequired("dbs")
+	_ = cmd.MarkFlagRequired("dbs")
 	return cmd
 }
 

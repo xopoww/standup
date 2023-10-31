@@ -1,3 +1,4 @@
+//nolint:lll // RunTest signature
 package service_test
 
 import (

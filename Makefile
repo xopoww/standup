@@ -1,7 +1,18 @@
-.PHONY : gomod generate-proto standup-daemon standupctl standup-bot
+.PHONY : gomod format lint unit-test check generate-proto standup-daemon standupctl standup-bot
 
 gomod:
 	go mod tidy
+
+format:
+	go fmt ./...
+
+lint:
+	golangci-lint run
+
+unit-test:
+	go test ./internal/...
+
+check: gomod format lint unit-test
 
 generate-proto:
 	./scripts/install_protoc.sh

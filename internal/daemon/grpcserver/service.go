@@ -1,8 +1,10 @@
+//nolint:lll // grpc signatures
 package grpcserver
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/xopoww/standup/internal/auth"
@@ -28,17 +30,20 @@ func NewService(repo models.Repository, ath auth.Authenticator) standup.StandupS
 }
 
 func (s *service) CreateMessage(ctx context.Context, req *standup.CreateMessageRequest) (*standup.CreateMessageResponse, error) {
-	if err := s.authorize(ctx, req.OwnerId); err != nil {
+	if err := s.authorize(ctx, req.GetOwnerId()); err != nil {
 		return nil, err
 	}
-	id := identifiers.GenerateID()
+	id, err := identifiers.GenerateID()
+	if err != nil {
+		return nil, fmt.Errorf("generate id: %w", err)
+	}
 	msg := &models.Message{
 		ID:        id,
-		OwnerID:   req.OwnerId,
-		Text:      req.Text,
+		OwnerID:   req.GetOwnerId(),
+		Text:      req.GetText(),
 		CreatedAt: time.Now().UTC(),
 	}
-	err := s.repo.CreateMessage(ctx, msg)
+	err = s.repo.CreateMessage(ctx, msg)
 	if err != nil {
 		return nil, s.mapError(err)
 	}
@@ -47,7 +52,7 @@ func (s *service) CreateMessage(ctx context.Context, req *standup.CreateMessageR
 }
 
 func (s *service) GetMessage(ctx context.Context, req *standup.GetMessageRequest) (*standup.GetMessageResponse, error) {
-	msg, err := s.repo.GetMessage(ctx, req.Id)
+	msg, err := s.repo.GetMessage(ctx, req.GetId())
 	if err != nil {
 		return nil, s.mapError(err)
 	}
@@ -65,16 +70,16 @@ func (s *service) GetMessage(ctx context.Context, req *standup.GetMessageRequest
 }
 
 func (s *service) ListMessages(ctx context.Context, req *standup.ListMessagesRequest) (*standup.ListMessagesResponse, error) {
-	if err := s.authorize(ctx, req.OwnerId); err != nil {
+	if err := s.authorize(ctx, req.GetOwnerId()); err != nil {
 		return nil, err
 	}
-	msgs, err := s.repo.ListMessages(ctx, req.OwnerId, req.From.AsTime(), req.To.AsTime())
+	msgs, err := s.repo.ListMessages(ctx, req.GetOwnerId(), req.GetFrom().AsTime(), req.GetTo().AsTime())
 	if err != nil {
 		return nil, s.mapError(err)
 	}
 	resp := &standup.ListMessagesResponse{}
 	for _, msg := range msgs {
-		resp.Messages = append(resp.Messages, &standup.Message{
+		resp.Messages = append(resp.GetMessages(), &standup.Message{
 			Id:        msg.ID,
 			Text:      msg.Text,
 			OwnerId:   msg.OwnerID,

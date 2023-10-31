@@ -1,3 +1,4 @@
+//nolint:lll // grpc signatures
 package logging
 
 import (
