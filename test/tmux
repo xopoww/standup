@@ -5,11 +5,11 @@ STANDUP_ROOT="$(pwd)"; export STANDUP_ROOT
 
 sleep="sleep 0.3"
 
-POSTGRES_CONTAINTER="standup-postgres"
+POSTGRES_CONTAINER="standup-postgres"
 
 if [ "$1" = "kill" ]; then
     tmux kill-server
-    docker kill "$POSTGRES_CONTAINTER"
+    docker kill "$POSTGRES_CONTAINER"
     exit 0
 fi
 
@@ -28,7 +28,7 @@ tmux send-keys "cd ./cmd/standup-daemon" Enter
 tmux send-keys "go run -race . -config <(envsubst < ../../test/configs/daemon_config.yaml)" Enter
 
 tmux new-window -n "db" ; $sleep
-tmux send-keys "docker run --rm --name $POSTGRES_CONTAINTER \
+tmux send-keys "docker run --rm --name $POSTGRES_CONTAINER \
     -p5432:5432 -e POSTGRES_PASSWORD=postgres \
     postgres" Enter
 

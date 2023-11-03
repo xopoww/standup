@@ -1,0 +1,9 @@
+---
+
+- hosts: all
+  tasks:
+  - ansible.builtin.include_vars: vars.yml
+
+- ansible.builtin.import_playbook: common.yml
+
+- ansible.builtin.import_playbook: standup-daemon.yml

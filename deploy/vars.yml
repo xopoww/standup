@@ -1,0 +1,7 @@
+go_version: '1.21'
+
+repository: github.com/xopoww/standup
+
+service_versions:
+  postgres: latest
+  standup: v0.0.1

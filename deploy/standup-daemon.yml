@@ -1,0 +1,57 @@
+---
+
+- name: Deploy standup-daemon
+  hosts: standup_daemon
+
+  tasks:
+  - name: Install standup-daemon {{ service_versions.standup }}
+    ansible.builtin.command: go install {{ repository }}/cmd/standup-daemon@{{ service_versions.standup }}
+
+  - name: Create config directory
+    file:
+      path: /etc/standup/daemon
+      state: directory
+      mode: 0511
+      recurse: true
+    become: true
+
+  # - name: Create config
+  #   ansible.builtin.template:
+  #     src: ../test/configs/daemon_config.yaml
+  #     dest: /etc/standup/daemon/config.yaml
+  #     mode: 0400
+  #   become: true
+  
+  - name: Install docker
+    apt: { name: docker.io }
+    become: true
+  
+  # TODO: move postgres to separate (and optional) playbook
+  - name: Create postgres data directory
+    file:
+      path: /var/lib/standup/postgres-data
+      state: directory
+      mode: 0775
+      recurse: true
+    become: true
+
+  - name: Run postgres in docker
+    community.docker.docker_container:
+      name: standup-postgres
+      image: postgres:{{ service_versions.postgres }}
+      state: started
+      restart: true
+      ports:
+      - "127.0.0.1:5432:5432"
+      volumes:
+      - /var/lib/standup/postgres-data:/var/lib/postgresql/data
+      env:
+        PGDATA: /var/lib/postgresql/data/pgdata
+        POSTGRES_PASSWORD: postgres # FIXME!
+    become: true
+
+  - name: Install standupctl {{ service_versions.standup }}
+    ansible.builtin.command: go install {{ repository }}/cmd/standupctl@{{ service_versions.standup }}
+  
+  - name: Migrate up
+    command: '{{ GOPATH.stdout }}/bin/standupctl db migrate up --dbs postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
