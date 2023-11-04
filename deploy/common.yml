@@ -12,5 +12,19 @@
     command: snap install go --channel {{ go_version }}/stable --classic
     become: true
   
-  - command: go env GOPATH
+  - name: Get GOPATH
+    command: go env GOPATH
     register: GOPATH
+  
+  - name: Add '{{ GOPATH.stdout }}/bin' to /etc/environment
+    lineinfile:
+      path: "/etc/environment"
+      state: present
+      regexp: "{{ GOPATH.stdout }}/bin^"
+      line: "PATH={{ lookup('ansible.builtin.env', 'PATH') }}:{{ GOPATH.stdout }}/bin^"
+    become: true
+    notify: Reset ssh connection
+
+  handlers:
+  - name: Reset ssh connection
+    meta: reset_connection
