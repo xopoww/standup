@@ -5,9 +5,10 @@ import (
 	"github.com/xopoww/standup/internal/standupctl/commands/db/migrate"
 )
 
-func Command() *cobra.Command {
+func DB() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "db",
+		Use:   "db",
+		Short: "Manage database",
 	}
 	cmd.AddCommand(migrate.Migrate())
 	return cmd
