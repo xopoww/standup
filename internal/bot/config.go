@@ -5,6 +5,8 @@ import (
 	"github.com/xopoww/standup/internal/bot/tg"
 )
 
+const DefaultConfigPath = "/etc/standup/bot/config.yaml"
+
 type Config struct {
 	Bot *tg.Config `yaml:"bot" validate:"required"`
 
