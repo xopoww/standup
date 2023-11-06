@@ -20,6 +20,7 @@
       image: postgres:{{ service_versions.postgres }}
       state: started
       restart: true
+      restart_policy: always
       ports:
       - "127.0.0.1:5432:5432"
       volumes:
