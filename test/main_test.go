@@ -13,9 +13,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
-	"github.com/xopoww/standup/internal/auth"
-	"github.com/xopoww/standup/internal/logging"
-	"github.com/xopoww/standup/internal/testutil"
+	"github.com/xopoww/standup/internal/common/auth"
+	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/config"
 	"go.uber.org/zap"

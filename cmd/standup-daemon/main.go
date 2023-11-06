@@ -4,8 +4,8 @@ import (
 	"context"
 	"flag"
 
+	"github.com/xopoww/standup/internal/common/logging"
 	"github.com/xopoww/standup/internal/daemon"
-	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/pkg/config"
 )
 

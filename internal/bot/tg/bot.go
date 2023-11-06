@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/xopoww/standup/internal/logging"
+	"github.com/xopoww/standup/internal/common/logging"
 )
 
 type bot struct {

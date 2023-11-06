@@ -1,4 +1,4 @@
-package models
+package dberrors
 
 import "errors"
 

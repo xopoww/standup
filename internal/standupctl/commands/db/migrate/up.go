@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/spf13/cobra"
-	"github.com/xopoww/standup/internal/daemon/repository/pg/migrations"
+	"github.com/xopoww/standup/internal/common/repository/pg/migrations"
 )
 
 func up() *cobra.Command {

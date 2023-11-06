@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/xopoww/standup/internal/auth"
+	"github.com/xopoww/standup/internal/common/auth"
+	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/internal/daemon/grpcserver"
-	"github.com/xopoww/standup/internal/daemon/models"
-	"github.com/xopoww/standup/internal/daemon/repository/pg"
-	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"google.golang.org/grpc"
 )
@@ -17,7 +16,7 @@ import (
 type Daemon struct {
 	cfg Config
 
-	repo models.Repository
+	repo *pg.Repository
 	srv  *grpc.Server
 }
 
