@@ -7,4 +7,4 @@ service:
     localhost:65000
 
 auth:
-  disable: true
+  public_key_file: /etc/standup/public.pem

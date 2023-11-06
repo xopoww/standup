@@ -4,4 +4,4 @@ repository: github.com/xopoww/standup
 
 service_versions:
   postgres: latest
-  standup: v0.0.1-041123-998b0c9
+  standup: v0.0.1-061123-c51f8ea
