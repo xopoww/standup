@@ -34,6 +34,5 @@ func Root() *cobra.Command {
 	root.AddCommand(db.DB(deps), secrets.Secrets(deps))
 	root.PersistentFlags().StringVar(&args.cfgPath, "config", standupctl.DefaultConfigPath, "path to yaml config file")
 	_ = root.MarkPersistentFlagFilename("config")
-	_ = root.MarkPersistentFlagRequired("config")
 	return root
 }
