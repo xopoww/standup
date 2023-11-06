@@ -1,0 +1,62 @@
+---
+
+- name: Deploy standup-daemon
+  hosts: standup_daemon
+
+  tasks:
+  - name: Install standup-daemon {{ service_versions.standup }}
+    ansible.builtin.command: go install {{ repository }}/cmd/standup-daemon@{{ service_versions.standup }}
+  
+  - name: Symlink standup-daemon
+    ansible.builtin.file:
+      src: "{{ GOPATH.stdout }}/bin/standup-daemon"
+      dest: /usr/bin/standup-daemon
+      owner: root
+      group: root
+      state: link
+    become: true
+
+  - name: Create config directory
+    file:
+      path: /etc/standup/daemon
+      state: directory
+      mode: 0511
+      recurse: true
+    become: true
+
+  - name: Create standup-daemon config
+    ansible.builtin.template:
+      src: ./files/configs/daemon.yaml
+      dest: /etc/standup/daemon/config.yaml
+      mode: 0600
+    become: true
+  
+  - name: Create standup-daemon.service
+    ansible.builtin.template:
+      src: ./files/systemd/standup-daemon.service
+      dest: /etc/systemd/system/standup-daemon.service
+      mode: 0600
+    become: true
+
+  - name: Install standupctl {{ service_versions.standup }}
+    ansible.builtin.command: go install {{ repository }}/cmd/standupctl@{{ service_versions.standup }}
+
+  - name: Symlink standupctl
+    ansible.builtin.file:
+      src: "{{ GOPATH.stdout }}/bin/standupctl"
+      dest: /usr/bin/standupctl
+      owner: root
+      group: root
+      state: link
+    become: true
+  
+  - name: Migrate up
+    command: 'standupctl db migrate up --dbs postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
+  
+  - name: Restart standup-daemon.service
+    ansible.builtin.systemd:
+      name: standup-daemon
+      state: restarted
+      daemon_reload: true
+      enabled: true
+    become: true

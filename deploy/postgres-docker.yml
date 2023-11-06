@@ -1,0 +1,31 @@
+- name: Bootstrap postgres docker container
+  hosts: postgres_docker
+
+  tasks:
+  - name: Install docker
+    apt: { name: docker.io }
+    become: true
+
+  - name: Create postgres data directory
+    file:
+      path: /var/lib/standup/postgres-data
+      state: directory
+      mode: 0775
+      recurse: true
+    become: true
+
+  - name: Run postgres in docker
+    community.docker.docker_container:
+      name: standup-postgres
+      image: postgres:{{ service_versions.postgres }}
+      state: started
+      restart: true
+      restart_policy: always
+      ports:
+      - "127.0.0.1:5432:5432"
+      volumes:
+      - /var/lib/standup/postgres-data:/var/lib/postgresql/data
+      env:
+        PGDATA: /var/lib/postgresql/data/pgdata
+        POSTGRES_PASSWORD: postgres # FIXME!
+    become: true

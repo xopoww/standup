@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -28,6 +29,17 @@ func loadKey(path, blockType string) ([]byte, error) {
 	return block.Bytes, nil
 }
 
+func writeKey(data []byte, blockType string, w io.Writer) error {
+	err := pem.Encode(w, &pem.Block{
+		Type:  blockType,
+		Bytes: data,
+	})
+	if err != nil {
+		return fmt.Errorf("pem encode: %w", err)
+	}
+	return nil
+}
+
 func LoadPublicKey(path string) (*ecdsa.PublicKey, error) {
 	encoded, err := loadKey(path, publicKey)
 	if err != nil {
@@ -44,6 +56,18 @@ func LoadPublicKey(path string) (*ecdsa.PublicKey, error) {
 	return key, nil
 }
 
+func WritePublicKey(key *ecdsa.PublicKey, w io.Writer) error {
+	encoded, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return fmt.Errorf("x509 marshal: %w", err)
+	}
+	err = writeKey(encoded, publicKey, w)
+	if err != nil {
+		return fmt.Errorf("write key: %w", err)
+	}
+	return nil
+}
+
 func LoadPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	encoded, err := loadKey(path, privateKey)
 	if err != nil {
@@ -54,4 +78,16 @@ func LoadPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 		return nil, fmt.Errorf("x509 parse: %w", err)
 	}
 	return key, nil
+}
+
+func WritePrivateKey(key *ecdsa.PrivateKey, w io.Writer) error {
+	encoded, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		return fmt.Errorf("x509 marshal: %w", err)
+	}
+	err = writeKey(encoded, privateKey, w)
+	if err != nil {
+		return fmt.Errorf("write key: %w", err)
+	}
+	return nil
 }

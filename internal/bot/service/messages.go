@@ -50,7 +50,7 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 	}
 
 	reply := tgbotapi.NewMessage(tm.Chat.ID, formatting.FormatMessages("Report", rsp.GetMessages()))
-	reply.ParseMode = "MarkdownV2"
+	reply.ParseMode = formatting.ParseMode
 	_, err = s.deps.Bot.Send(reply)
 	if err != nil {
 		return fmt.Errorf("send reply: %w", err)

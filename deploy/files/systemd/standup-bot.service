@@ -1,0 +1,12 @@
+[Unit]
+Description=Standup telegram bot
+
+[Service]
+User=root
+WorkingDirectory=/root
+ExecStart=standup-bot
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

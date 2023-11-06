@@ -29,7 +29,7 @@ func main() {
 		_ = logger.Sync()
 	}()
 
-	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
+	flag.StringVar(&args.cfgPath, "config", bot.DefaultConfigPath, "path to yaml config file")
 	flag.BoolVar(&args.devel, "devel", false, "enable development mode")
 	flag.Parse()
 	if args.cfgPath == "" {

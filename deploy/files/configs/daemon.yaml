@@ -1,0 +1,10 @@
+database:
+  dbs:
+    postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+
+service:
+  addr:
+    localhost:65000
+
+auth:
+  public_key_file: /etc/standup/public.pem
