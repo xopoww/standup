@@ -9,11 +9,11 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/spf13/cobra"
 	"github.com/xopoww/standup/internal/common/repository/pg/migrations"
+	"github.com/xopoww/standup/internal/standupctl"
 )
 
-func up() *cobra.Command {
+func up(deps *standupctl.Deps) *cobra.Command {
 	var args struct {
-		dbs     string
 		verbose bool
 	}
 	cmd := &cobra.Command{
@@ -21,7 +21,7 @@ func up() *cobra.Command {
 		Short: "Migrate up",
 		Long:  "Migrate the database to the most resent version",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			mig, err := migrations.NewMigration(context.Background(), args.dbs)
+			mig, err := migrations.NewMigration(context.Background(), deps.Cfg.Database.DBS)
 			if err != nil {
 				return fmt.Errorf("new migration: %w", err)
 			}
@@ -34,9 +34,7 @@ func up() *cobra.Command {
 			return err
 		},
 	}
-	cmd.Flags().StringVar(&args.dbs, "dbs", "", "database connection string")
 	cmd.Flags().BoolVarP(&args.verbose, "verbose", "v", false, "")
-	_ = cmd.MarkFlagRequired("dbs")
 	return cmd
 }
 

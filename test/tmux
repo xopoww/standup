@@ -36,7 +36,7 @@ $sleep ; $sleep ; $sleep
 
 tmux select-window -t 0
 tmux send-keys "make standupctl" Enter
-tmux send-keys "./bin/standupctl db migrate up --dbs $(yq .database.dbs ./test/configs/test_config.yaml) -v" Enter
+tmux send-keys "./bin/standupctl --config ./test/configs/standupctl_config.yaml db migrate up -v" Enter
 tmux send-keys "go test ./test -v -config <(envsubst < ./test/configs/test_config.yaml)"
 
 tmux a

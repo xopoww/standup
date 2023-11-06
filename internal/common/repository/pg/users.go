@@ -29,3 +29,17 @@ func (r *Repository) GetUser(ctx context.Context, username string) (*models.User
 	}
 	return user, nil
 }
+
+func (r *Repository) UpsertUser(ctx context.Context, user *models.User) error {
+	const stmt = "upsert_user"
+	_, err := r.conn.Prepare(ctx, stmt, "INSERT INTO users (username, whitelisted) VALUES  ($1, $2)"+
+		"ON CONFLICT (username) DO UPDATE SET whitelisted=$2")
+	if err != nil {
+		return fmt.Errorf("prepare: %w", err)
+	}
+	_, err = r.conn.Exec(ctx, stmt, user.Username, user.Whitelisted)
+	if err != nil {
+		return fmt.Errorf("exec: %w", err)
+	}
+	return nil
+}
