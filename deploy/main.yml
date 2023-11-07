@@ -6,5 +6,6 @@
 
 - ansible.builtin.import_playbook: common.yml
 - ansible.builtin.import_playbook: postgres-docker.yml
+- ansible.builtin.import_playbook: standupctl.yml
 - ansible.builtin.import_playbook: standup-bot.yml
 - ansible.builtin.import_playbook: standup-daemon.yml

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/bot/service"
 	"github.com/xopoww/standup/internal/bot/tg"
-	"github.com/xopoww/standup/internal/logging"
-	"github.com/xopoww/standup/internal/testutil"
+	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/testutil"
 )
 
 type testFunc func(

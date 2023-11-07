@@ -5,16 +5,13 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xopoww/standup/internal/bot/service"
 )
 
-//TODO: DRY with internal/repository/pg
-
-type repository struct {
+type Repository struct {
 	conn *pgx.Conn
 }
 
-func NewRepository(ctx context.Context, dbs string) (service.Repository, error) {
+func NewRepository(ctx context.Context, dbs string) (*Repository, error) {
 	conn, err := pgx.Connect(ctx, dbs)
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)
@@ -23,10 +20,10 @@ func NewRepository(ctx context.Context, dbs string) (service.Repository, error) 
 	if err != nil {
 		return nil, fmt.Errorf("ping: %w", err)
 	}
-	return &repository{conn: conn}, nil
+	return &Repository{conn: conn}, nil
 }
 
-func (r *repository) Close(ctx context.Context) error {
+func (r *Repository) Close(ctx context.Context) error {
 	if r.conn == nil {
 		return nil
 	}

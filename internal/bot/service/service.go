@@ -8,9 +8,11 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/bot/tg"
-	"github.com/xopoww/standup/internal/logging"
+	"github.com/xopoww/standup/internal/common/auth"
+	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/repository/dberrors"
+	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -19,7 +21,7 @@ import (
 
 type Deps struct {
 	Bot    tg.Bot
-	Repo   Repository
+	Repo   *pg.Repository
 	Client standup.StandupClient
 	Issuer auth.Issuer
 }
@@ -82,7 +84,7 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 	msg := *u.Message
 
 	if s.cfg.WhitelistEnabled {
-		allowed, err := s.deps.Repo.CheckWhitelist(ctx, msg.From.UserName)
+		allowed, err := s.checkWhitelist(ctx, msg.From.UserName)
 		// do not report errs to unverified users
 		if err != nil {
 			return fmt.Errorf("check whitelist: %w", err)
@@ -128,4 +130,15 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 		err = fmt.Errorf("send reply: %w (while handling error: %w)", rerr, err)
 	}
 	return err
+}
+
+func (s *Service) checkWhitelist(ctx context.Context, username string) (bool, error) {
+	user, err := s.deps.Repo.GetUser(ctx, username)
+	if errors.Is(err, dberrors.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return user.Whitelisted, nil
 }

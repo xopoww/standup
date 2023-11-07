@@ -1,0 +1,36 @@
+---
+
+- name: Deploy standupctl
+  hosts: standup_daemon:standup_bot
+
+  tasks:
+  - name: Install standupctl {{ service_versions.standup }}
+    ansible.builtin.command: go install {{ repository }}/cmd/standupctl@{{ service_versions.standup }}
+  
+  - name: Symlink standupctl
+    ansible.builtin.file:
+      src: "{{ GOPATH.stdout }}/bin/standupctl"
+      dest: /usr/bin/standupctl
+      owner: root
+      group: root
+      state: link
+    become: true
+
+  - name: Create config directory
+    file:
+      path: /etc/standup/standupctl
+      state: directory
+      mode: 0511
+      recurse: true
+    become: true
+
+  - name: Create standupctl config
+    ansible.builtin.template:
+      src: ./files/configs/standupctl.yaml
+      dest: /etc/standup/standupctl/config.yaml
+      mode: 0600
+    become: true
+  
+  - name: Migrate up
+    command: 'standupctl db migrate up'
+    become: true

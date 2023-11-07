@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/xopoww/standup/internal/testutil"
+	"github.com/xopoww/standup/internal/common/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/identifiers"
 	"google.golang.org/grpc/codes"

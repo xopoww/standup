@@ -11,7 +11,7 @@ import (
 	"path"
 
 	"github.com/spf13/cobra"
-	"github.com/xopoww/standup/internal/auth"
+	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/standupctl/util"
 )
 

@@ -37,21 +37,6 @@
       dest: /etc/systemd/system/standup-daemon.service
       mode: 0600
     become: true
-
-  - name: Install standupctl {{ service_versions.standup }}
-    ansible.builtin.command: go install {{ repository }}/cmd/standupctl@{{ service_versions.standup }}
-
-  - name: Symlink standupctl
-    ansible.builtin.file:
-      src: "{{ GOPATH.stdout }}/bin/standupctl"
-      dest: /usr/bin/standupctl
-      owner: root
-      group: root
-      state: link
-    become: true
-  
-  - name: Migrate up
-    command: 'standupctl db migrate up --dbs postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
   
   - name: Restart standup-daemon.service
     ansible.builtin.systemd:

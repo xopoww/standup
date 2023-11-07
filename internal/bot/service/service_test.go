@@ -8,9 +8,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/bot/tg"
-	"github.com/xopoww/standup/internal/testutil"
+	"github.com/xopoww/standup/internal/common/auth"
+	"github.com/xopoww/standup/internal/common/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"google.golang.org/grpc/metadata"
 )
