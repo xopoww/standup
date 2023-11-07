@@ -3,7 +3,7 @@ bot:
   poll: {}
 
 service:
-  whitelist_enabled: false
+  whitelist_enabled: true
 
 database:
   dbs:
