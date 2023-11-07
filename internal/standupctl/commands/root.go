@@ -8,6 +8,7 @@ import (
 	"github.com/xopoww/standup/internal/standupctl"
 	"github.com/xopoww/standup/internal/standupctl/commands/db"
 	"github.com/xopoww/standup/internal/standupctl/commands/secrets"
+	"github.com/xopoww/standup/internal/standupctl/commands/users"
 	"github.com/xopoww/standup/pkg/config"
 )
 
@@ -31,7 +32,7 @@ func Root() *cobra.Command {
 			return nil
 		},
 	}
-	root.AddCommand(db.DB(deps), secrets.Secrets(deps))
+	root.AddCommand(db.DB(deps), secrets.Secrets(deps), users.Users(deps))
 	root.PersistentFlags().StringVar(&args.cfgPath, "config", standupctl.DefaultConfigPath, "path to yaml config file")
 	_ = root.MarkPersistentFlagFilename("config")
 	return root
