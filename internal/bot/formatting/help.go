@@ -7,6 +7,8 @@ import (
 	"github.com/xopoww/standup/internal/bot/commands"
 )
 
+// FormatHelp formats full help message (with optional text block before commands).
+// If present, text must be valid when parsed with ParseMode (see Escape).
 func FormatHelp(text string, cmds []commands.Desc) string {
 	bldr := &strings.Builder{}
 
@@ -16,22 +18,27 @@ func FormatHelp(text string, cmds []commands.Desc) string {
 	}
 	_, _ = fmt.Fprintf(bldr, "")
 	for _, cmd := range cmds {
-		_, _ = fmt.Fprintf(bldr, "- %s\n", FormatCommandShortHelp(cmd))
+		_, _ = fmt.Fprintf(bldr, "%s %s\n", Escape("-"), FormatCommandShortHelp(cmd))
 	}
 	return bldr.String()
 }
 
 func FormatCommandShortHelp(cmd commands.Desc) string {
 	if cmd.Usage != "" {
-		return fmt.Sprintf("`/%s %s` %s", cmd.Name, cmd.Usage, cmd.Short)
+		return fmt.Sprintf("`/%s %s` %s", cmd.Name,
+			cmd.Usage,
+			Escape(cmd.Short),
+		)
 	}
-	return fmt.Sprintf("`/%s` %s", cmd.Name, cmd.Short)
+	return fmt.Sprintf("`/%s` %s", cmd.Name,
+		Escape(cmd.Short),
+	)
 }
 
 func FormatCommandHelp(cmd commands.Desc) string {
 	help := FormatCommandShortHelp(cmd)
 	if cmd.Long != "" {
-		help += "\n\n" + cmd.Long
+		help += "\n\n" + Escape(cmd.Long)
 	}
 	return help
 }
