@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/xopoww/standup/internal/bot/commands"
 	"github.com/xopoww/standup/internal/bot/tg"
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
@@ -32,10 +33,22 @@ type Service struct {
 
 	cfg  Config
 	deps Deps
+
+	cmds []commands.Desc
 }
 
 func NewService(logger *zap.Logger, cfg Config, deps Deps) (*Service, error) {
-	return &Service{logger: logger, cfg: cfg, deps: deps}, nil
+	cmds, err := commands.LoadDescriptions()
+	if err != nil {
+		return nil, fmt.Errorf("load descriptions: %w", err)
+	}
+	logger.Sugar().Debugf("Loaded descriptions of %d command(s).", len(cmds))
+	return &Service{
+		logger: logger,
+		cfg:    cfg,
+		deps:   deps,
+		cmds:   cmds,
+	}, nil
 }
 
 func (s *Service) Start() {
@@ -105,6 +118,8 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 		err = s.addMessage(ctx, msg)
 	case "report":
 		err = s.getReport(ctx, msg)
+	case "help":
+		err = s.help(ctx, msg)
 	default:
 		err = NewSyntaxErrorf("unknown command: %q", cmd)
 	}

@@ -1,0 +1,20 @@
+commands:
+  - name: report
+    usage: '<since> [until]'
+    short: 'get messages from specified time interval'
+    long: |
+      Get messages added between `since` and `until` (if latter is omitted, current time is used).
+      
+      Timestamps can be specified in one of the following formats:
+      - full date & time `dd.mm.yyyy HH:MM`
+      - only date `dd.mm.yyyy` (midnight is assumed)
+      - only time `HH:MM` (current date is assumed)
+      - relative systemd-like negative time intervals:
+        - `-1d` - 24 hours before "now"
+        - `-1h` - 1 hour before "now"
+        and so on.
+      
+      Currently all timestamps are considered to be in UTC.
+  - name: help
+    usage: '[command]'
+    short: 'get help for one or all of the commands'
