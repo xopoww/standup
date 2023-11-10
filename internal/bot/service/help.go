@@ -31,7 +31,7 @@ Availible commands:
 
 `
 	text := formatting.FormatHelp(formatting.Escape(helpText), s.cmds)
-	text += "\nUse `/help <command>` for more info."
+	text += "\nUse `/help <command>` for more info" + formatting.Escape(".")
 	reply := tgbotapi.NewMessage(tm.Chat.ID, text)
 	reply.ParseMode = formatting.ParseMode
 	_, err = s.deps.Bot.Send(reply)
