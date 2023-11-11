@@ -76,7 +76,7 @@ func (s *Service) addMessage(ctx context.Context, tm tgbotapi.Message) (err erro
 		return fmt.Errorf("create message: %w", err)
 	}
 
-	_, err = s.deps.Bot.Send(tg.NewReplyf(tm, "Created message %q.", rsp.GetId()))
+	_, err = s.deps.Bot.Send(tg.NewReplyf(tm, formatting.FormatMessageCreated(rsp.GetId())))
 	if err != nil {
 		return fmt.Errorf("send reply: %w", err)
 	}

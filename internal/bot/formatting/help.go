@@ -1,38 +1,41 @@
 package formatting
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/xopoww/standup/internal/bot/commands"
 )
 
-// FormatHelp formats full help message (with optional text block before commands).
-// If present, text must be valid when parsed with ParseMode (see Escape).
-func FormatHelp(text string, cmds []commands.Desc) string {
-	bldr := &strings.Builder{}
+func FormatHelp(cmds []commands.Desc) string {
+	data := struct {
+		Text string
+		Cmds []commands.Desc
 
-	_, _ = fmt.Fprintf(bldr, "**Help**\n\n")
-	if text != "" {
-		_, _ = fmt.Fprintf(bldr, "%s\n\n", text)
+		FormatCommandShortHelp func(cmd commands.Desc) string
+	}{
+		Cmds:                   cmds,
+		FormatCommandShortHelp: FormatCommandShortHelp,
 	}
-	_, _ = fmt.Fprintf(bldr, "")
-	for _, cmd := range cmds {
-		_, _ = fmt.Fprintf(bldr, "%s %s\n", Escape("-"), FormatCommandShortHelp(cmd))
-	}
-	return bldr.String()
+	return MustRenderTemplate(`This bot can be used to save short messages and retrieve time-based reports.
+
+Send a message to this bot to save it.
+
+Availible commands (run {{ mono "/help <command>" }} for more info):
+
+{{ range .Cmds }}- {{ call $.FormatCommandShortHelp . }}
+{{end}}`, data)
 }
 
 func FormatCommandShortHelp(cmd commands.Desc) string {
-	if cmd.Usage != "" {
-		return fmt.Sprintf("`/%s %s` %s", cmd.Name,
-			cmd.Usage,
-			Escape(cmd.Short),
-		)
+	data := struct {
+		Command string
+		Short   string
+	}{
+		Command: "/" + cmd.Name,
+		Short:   cmd.Short,
 	}
-	return fmt.Sprintf("`/%s` %s", cmd.Name,
-		Escape(cmd.Short),
-	)
+	if cmd.Usage != "" {
+		data.Command += " " + cmd.Usage
+	}
+	return MustRenderTemplate(`{{ mono .Command }} {{ esc .Short }}`, data)
 }
 
 func FormatCommandHelp(cmd commands.Desc) string {
