@@ -8,6 +8,9 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/xopoww/standup/internal/bot/commands"
+	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
+	"github.com/xopoww/standup/internal/bot/formatting"
 	"github.com/xopoww/standup/internal/bot/tg"
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
@@ -32,10 +35,22 @@ type Service struct {
 
 	cfg  Config
 	deps Deps
+
+	cmds []commandtypes.Desc
 }
 
 func NewService(logger *zap.Logger, cfg Config, deps Deps) (*Service, error) {
-	return &Service{logger: logger, cfg: cfg, deps: deps}, nil
+	cmds, err := commands.LoadDescriptions()
+	if err != nil {
+		return nil, fmt.Errorf("load descriptions: %w", err)
+	}
+	logger.Sugar().Debugf("Loaded descriptions of %d command(s).", len(cmds))
+	return &Service{
+		logger: logger,
+		cfg:    cfg,
+		deps:   deps,
+		cmds:   cmds,
+	}, nil
 }
 
 func (s *Service) Start() {
@@ -91,7 +106,7 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 		}
 		if !allowed {
 			logging.L(ctx).Sugar().Debugf("User %q is not in whitelist, access denied.", msg.From.UserName)
-			_, err = s.deps.Bot.Send(tg.NewReplyf(msg, "Bot usage is currently restricted."))
+			_, err = s.deps.Bot.Send(tg.NewReplyf(msg, formatting.UsageRestricted))
 			if err != nil {
 				return err
 			}
@@ -105,27 +120,30 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 		err = s.addMessage(ctx, msg)
 	case "report":
 		err = s.getReport(ctx, msg)
+	case "help":
+		err = s.help(ctx, msg)
 	default:
-		err = NewSyntaxErrorf("unknown command: %q", cmd)
+		err = formatting.NewSyntaxErrorf("unknown command %q", cmd)
 	}
 	if err == nil {
 		return nil
 	}
 
-	serr := SyntaxError{}
-	if errors.As(err, &serr) {
-		_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Invalid command: %s.", serr.Error()))
+	// TODO: add command to syntax errors
+	//nolint:errorlint // Printable is not an error
+	if perr, ok := err.(formatting.Printable); ok {
+		_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, perr.Printable()))
 		return rerr
 	}
 
 	if st, ok := status.FromError(err); ok {
 		if st.Code() == codes.PermissionDenied {
-			_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Permission denied."))
+			_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, formatting.PermissionDenied))
 			return rerr
 		}
 	}
 
-	_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, "Internal error occured."))
+	_, rerr := s.deps.Bot.Send(tg.NewReplyf(msg, formatting.InternalError))
 	if rerr != nil {
 		err = fmt.Errorf("send reply: %w (while handling error: %w)", rerr, err)
 	}
