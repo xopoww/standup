@@ -6,6 +6,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xopoww/standup/internal/bot/formatting"
+	"github.com/xopoww/standup/internal/bot/tg"
 )
 
 func (s *Service) help(_ context.Context, tm tgbotapi.Message) (err error) {
@@ -14,8 +15,7 @@ func (s *Service) help(_ context.Context, tm tgbotapi.Message) (err error) {
 			if cmd.Name != args {
 				continue
 			}
-			reply := tgbotapi.NewMessage(tm.Chat.ID, formatting.FormatCommandHelp(cmd))
-			reply.ParseMode = formatting.ParseMode
+			reply := tg.NewMessagef(tm.Chat.ID, formatting.FormatCommandHelp(cmd))
 			_, err = s.deps.Bot.Send(reply)
 			if err != nil {
 				err = fmt.Errorf("send reply: %w", err)
@@ -23,8 +23,7 @@ func (s *Service) help(_ context.Context, tm tgbotapi.Message) (err error) {
 			return err
 		}
 	}
-	reply := tgbotapi.NewMessage(tm.Chat.ID, formatting.FormatHelp(s.cmds))
-	reply.ParseMode = formatting.ParseMode
+	reply := tg.NewMessagef(tm.Chat.ID, formatting.FormatHelp(s.cmds))
 	_, err = s.deps.Bot.Send(reply)
 	if err != nil {
 		err = fmt.Errorf("send reply: %w", err)
