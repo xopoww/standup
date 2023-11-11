@@ -3,8 +3,8 @@ package grpcserver
 import (
 	"context"
 
-	"github.com/xopoww/standup/internal/auth"
-	"github.com/xopoww/standup/internal/logging"
+	"github.com/xopoww/standup/internal/common/auth"
+	"github.com/xopoww/standup/internal/common/logging"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"

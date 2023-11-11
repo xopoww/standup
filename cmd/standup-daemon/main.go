@@ -4,8 +4,8 @@ import (
 	"context"
 	"flag"
 
+	"github.com/xopoww/standup/internal/common/logging"
 	"github.com/xopoww/standup/internal/daemon"
-	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/pkg/config"
 )
 
@@ -19,7 +19,7 @@ func main() {
 		_ = logger.Sync()
 	}()
 
-	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
+	flag.StringVar(&args.cfgPath, "config", daemon.DefaultConfigPath, "path to yaml config file")
 	flag.Parse()
 	if args.cfgPath == "" {
 		logger.Sugar().Fatal("`config` is required.")

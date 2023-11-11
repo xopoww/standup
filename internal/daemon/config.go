@@ -1,5 +1,7 @@
 package daemon
 
+const DefaultConfigPath = "/etc/standup/daemon/config.yaml"
+
 type Config struct {
 	Database struct {
 		DBS string `yaml:"dbs" validate:"required"`

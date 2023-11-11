@@ -6,12 +6,12 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/xopoww/standup/internal/auth"
 	"github.com/xopoww/standup/internal/bot"
-	"github.com/xopoww/standup/internal/bot/repository/pg"
 	"github.com/xopoww/standup/internal/bot/service"
 	"github.com/xopoww/standup/internal/bot/tg"
-	"github.com/xopoww/standup/internal/logging"
+	"github.com/xopoww/standup/internal/common/auth"
+	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/config"
 	"google.golang.org/grpc"
@@ -29,7 +29,7 @@ func main() {
 		_ = logger.Sync()
 	}()
 
-	flag.StringVar(&args.cfgPath, "config", "", "path to yaml config file")
+	flag.StringVar(&args.cfgPath, "config", bot.DefaultConfigPath, "path to yaml config file")
 	flag.BoolVar(&args.devel, "devel", false, "enable development mode")
 	flag.Parse()
 	if args.cfgPath == "" {

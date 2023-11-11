@@ -1,0 +1,16 @@
+bot:
+  token_file: /etc/standup/bot/token
+  poll: {}
+
+service:
+  whitelist_enabled: true
+
+database:
+  dbs:
+    postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+
+standup:
+  addr:
+    localhost:65000
+
+private_key_file: /etc/standup/bot/private.ec.key

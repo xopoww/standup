@@ -1,0 +1,24 @@
+name: release-go-list
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: go-list
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: false
+      - name: list
+        run: |
+          GOPROXY=proxy.golang.org go list -m "github.com/xopoww/standup@${GITHUB_REF#"refs/tags/"}"
+
+
+      

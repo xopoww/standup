@@ -1,0 +1,72 @@
+- name: Deploy standup-bot
+  hosts: standup_bot
+
+  tasks:
+  - name: Install standup-bot {{ service_versions.standup }}
+    ansible.builtin.command: go install {{ repository }}/cmd/standup-bot@{{ service_versions.standup }}
+  
+  - name: Symlink standup-bot
+    ansible.builtin.file:
+      src: "{{ GOPATH.stdout }}/bin/standup-bot"
+      dest: /usr/bin/standup-bot
+      owner: root
+      group: root
+      state: link
+    become: true
+
+  - name: Create config directory
+    file:
+      path: /etc/standup/bot
+      state: directory
+      mode: 0511
+      recurse: true
+    become: true
+
+  - name: Create standup-bot config
+    ansible.builtin.template:
+      src: ./files/configs/bot.yaml
+      dest: /etc/standup/bot/config.yaml
+      mode: 0600
+    become: true
+  
+  - name: Create standup-bot.service
+    ansible.builtin.template:
+      src: ./files/systemd/standup-bot.service
+      dest: /etc/systemd/system/standup-bot.service
+      mode: 0600
+    become: true
+  
+  - name: Check keys
+    stat:
+      path: "{{ item }}"
+    with_items:
+    - /etc/standup/public.pem
+    - /etc/standup/bot/private.ec.key
+    become: true
+    register: key_stat
+    changed_when: not key_stat.stat.exists
+    notify: Generate keys
+  - meta: flush_handlers
+
+  - name: Create bot token
+    ansible.builtin.copy:
+      src: ../dev/keys/tg_token.txt
+      dest: /etc/standup/bot/token
+      owner: root
+      group: root
+      mode: '0600'
+    become: true
+  
+  - name: Restart standup-bot.service
+    ansible.builtin.systemd:
+      name: standup-bot
+      state: restarted
+      daemon_reload: true
+      enabled: true
+    become: true
+
+  handlers:
+  - name: Generate keys
+    command: 'standupctl secrets gen-keys --crt /etc/standup/public.pem --key /etc/standup/bot/private.ec.key -f'
+    become: true
+

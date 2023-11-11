@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xopoww/standup/internal/auth"
+	"github.com/xopoww/standup/internal/common/auth"
+	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/repository/dberrors"
+	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/internal/daemon/models"
-	"github.com/xopoww/standup/internal/logging"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/identifiers"
 	"google.golang.org/grpc/codes"
@@ -20,12 +22,12 @@ import (
 type service struct {
 	standup.UnimplementedStandupServer
 
-	repo models.Repository
+	repo *pg.Repository
 
 	ath auth.Authenticator
 }
 
-func NewService(repo models.Repository, ath auth.Authenticator) standup.StandupServer {
+func NewService(repo *pg.Repository, ath auth.Authenticator) standup.StandupServer {
 	return &service{repo: repo, ath: ath}
 }
 
@@ -93,7 +95,7 @@ func (s *service) mapError(err error) error {
 	if err == nil {
 		return nil
 	}
-	if errors.Is(err, models.ErrNotFound) {
+	if errors.Is(err, dberrors.ErrNotFound) {
 		return status.Error(codes.NotFound, err.Error())
 	}
 	return status.Error(codes.Internal, err.Error())

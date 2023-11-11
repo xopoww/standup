@@ -36,7 +36,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/jackc/pgx/v5 v5.4.3
+	github.com/jackc/pgx/v5 v5.5.0
 	github.com/spf13/cobra v1.7.0
 	github.com/trstringer/go-systemd-time v1.0.0
 	go.uber.org/zap v1.26.0

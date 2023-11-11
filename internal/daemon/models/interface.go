@@ -10,8 +10,3 @@ type Models interface {
 	GetMessage(ctx context.Context, id string) (*Message, error)
 	ListMessages(ctx context.Context, ownerID string, from, to time.Time) ([]*Message, error)
 }
-
-type Repository interface {
-	Models
-	Close(ctx context.Context) error
-}
