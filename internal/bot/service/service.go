@@ -123,7 +123,7 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 	case "help":
 		err = s.help(ctx, msg)
 	default:
-		err = formatting.NewSyntaxErrorf("unknown command %q.", cmd)
+		err = formatting.NewSyntaxErrorf("unknown command %q", cmd)
 	}
 	if err == nil {
 		return nil
