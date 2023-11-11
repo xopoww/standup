@@ -18,18 +18,18 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 
 	args := strings.Split(tm.CommandArguments(), " ")
 	if len(args) < 1 || len(args) > 3 {
-		return NewSyntaxError("bad number of arguments")
+		return formatting.NewSyntaxErrorf("bad number of arguments")
 	}
 
 	from, err := formatting.ParseTime(args[0], now)
 	if err != nil {
-		return NewSyntaxError(err.Error())
+		return formatting.NewSyntaxErrorf(err.Error())
 	}
 	var to time.Time
 	if len(args) == 2 {
 		to, err = formatting.ParseTime(args[1], now)
 		if err != nil {
-			return NewSyntaxError(err.Error())
+			return formatting.NewSyntaxErrorf(err.Error())
 		}
 	} else {
 		to = now

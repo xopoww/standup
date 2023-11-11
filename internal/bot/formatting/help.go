@@ -24,18 +24,16 @@ Availible commands (run {{ mono "/help <command>" }} for more info):
 {{end}}`, data)
 }
 
-func FormatCommandShortHelp(cmd commandtypes.Desc) string {
-	data := struct {
-		Command string
-		Short   string
-	}{
-		Command: "/" + cmd.Name,
-		Short:   cmd.Short,
-	}
+func FormatCommandUsage(cmd commandtypes.Desc) string {
+	usage := "/" + cmd.Name
 	if cmd.Usage != "" {
-		data.Command += " " + cmd.Usage
+		usage += " " + cmd.Usage
 	}
-	return MustRenderTemplate(`{{ mono .Command }} {{ .Short }}`, data)
+	return Mono(usage)
+}
+
+func FormatCommandShortHelp(cmd commandtypes.Desc) string {
+	return FormatCommandUsage(cmd) + " " + cmd.Short
 }
 
 func FormatCommandHelp(cmd commandtypes.Desc) string {
