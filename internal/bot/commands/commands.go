@@ -2,40 +2,44 @@ package commands
 
 import (
 	_ "embed"
+	"fmt"
 	"io"
 	"strings"
 
+	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
+	"github.com/xopoww/standup/internal/bot/formatting"
 	"github.com/xopoww/standup/pkg/config"
 )
 
 //go:embed commands.yaml
 var commandsData string
 
-type Desc struct {
-	Name  string `yaml:"name" validate:"required"`
-	Usage string `yaml:"usage"`
-	Short string `yaml:"short" validate:"required"`
-	Long  string `yaml:"long"`
-}
-
-func (d Desc) sanitized() Desc {
-	d.Usage = strings.TrimSpace(d.Usage)
-	d.Short = strings.TrimSpace(d.Short)
-	d.Long = strings.TrimSpace(d.Long)
-	return d
-}
-
-func LoadDescriptions() ([]Desc, error) {
+func LoadDescriptions() ([]commandtypes.Desc, error) {
 	return loadFrom(strings.NewReader(commandsData))
 }
 
-func loadFrom(r io.Reader) ([]Desc, error) {
+func loadFrom(r io.Reader) ([]commandtypes.Desc, error) {
 	var cmds struct {
-		Commands []Desc `yaml:"commands" validate:"required"`
+		Commands []commandtypes.Desc `yaml:"commands" validate:"required"`
 	}
 	err := config.Load(r, &cmds)
-	for i := range cmds.Commands {
-		cmds.Commands[i] = cmds.Commands[i].sanitized()
+	if err != nil {
+		return nil, fmt.Errorf("load: %w", err)
 	}
-	return cmds.Commands, err
+	for i := range cmds.Commands {
+		var err error
+		cmds.Commands[i].Short, err = formatting.RenderTemplate(cmds.Commands[i].Short, nil)
+		if err != nil {
+			return nil, fmt.Errorf("render commands[%d].short: %w", i, err)
+		}
+		cmds.Commands[i].Long, err = formatting.RenderTemplate(cmds.Commands[i].Long, nil)
+		if err != nil {
+			return nil, fmt.Errorf("render commands[%d].long: %w", i, err)
+		}
+
+		cmds.Commands[i].Usage = strings.TrimSpace(cmds.Commands[i].Usage)
+		cmds.Commands[i].Short = strings.TrimSpace(cmds.Commands[i].Short)
+		cmds.Commands[i].Long = strings.TrimSpace(cmds.Commands[i].Long)
+	}
+	return cmds.Commands, nil
 }

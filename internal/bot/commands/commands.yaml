@@ -3,15 +3,15 @@ commands:
     usage: '<since> [until]'
     short: 'get messages from specified time interval'
     long: |
-      Get messages added between {{mono "since"}} and {{mono "until"}} (if latter is omitted, current time is used).
+      Get messages added between {{ mono "since" }} and {{ mono "until" }} (if latter is omitted, current time is used).
       
       Timestamps can be specified in one of the following formats:
-      - full date & time {{mono "dd.mm.yyyy HH:MM"}}
-      - only date {{mono dd.mm.yyyy"}} (midnight is assumed)
-      - only time {{mono HH:MM}} (current date is assumed)
+      - full date & time {{ mono "dd.mm.yyyy HH:MM" }}
+      - only date {{ mono "dd.mm.yyyy" }} (midnight is assumed)
+      - only time {{ mono "HH:MM" }} (current date is assumed)
       - relative systemd-like negative time intervals:
-        - {{mono -1d}} - 24 hours before "now"
-        - {{mono -1h}} - 1 hour before "now"
+        - {{ mono "-1d" }} - 24 hours before "now"
+        - {{ mono "-1h" }} - 1 hour before "now"
         and so on.
       
       Currently all timestamps are considered to be in UTC.

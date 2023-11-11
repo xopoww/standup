@@ -9,6 +9,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xopoww/standup/internal/bot/commands"
+	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
 	"github.com/xopoww/standup/internal/bot/tg"
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
@@ -34,7 +35,7 @@ type Service struct {
 	cfg  Config
 	deps Deps
 
-	cmds []commands.Desc
+	cmds []commandtypes.Desc
 }
 
 func NewService(logger *zap.Logger, cfg Config, deps Deps) (*Service, error) {

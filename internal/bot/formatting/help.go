@@ -1,15 +1,15 @@
 package formatting
 
 import (
-	"github.com/xopoww/standup/internal/bot/commands"
+	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
 )
 
-func FormatHelp(cmds []commands.Desc) string {
+func FormatHelp(cmds []commandtypes.Desc) string {
 	data := struct {
 		Text string
-		Cmds []commands.Desc
+		Cmds []commandtypes.Desc
 
-		FormatCommandShortHelp func(cmd commands.Desc) string
+		FormatCommandShortHelp func(cmd commandtypes.Desc) string
 	}{
 		Cmds:                   cmds,
 		FormatCommandShortHelp: FormatCommandShortHelp,
@@ -24,7 +24,7 @@ Availible commands (run {{ mono "/help <command>" }} for more info):
 {{end}}`, data)
 }
 
-func FormatCommandShortHelp(cmd commands.Desc) string {
+func FormatCommandShortHelp(cmd commandtypes.Desc) string {
 	data := struct {
 		Command string
 		Short   string
@@ -35,13 +35,13 @@ func FormatCommandShortHelp(cmd commands.Desc) string {
 	if cmd.Usage != "" {
 		data.Command += " " + cmd.Usage
 	}
-	return MustRenderTemplate(`{{ mono .Command }} {{ esc .Short }}`, data)
+	return MustRenderTemplate(`{{ mono .Command }} {{ .Short }}`, data)
 }
 
-func FormatCommandHelp(cmd commands.Desc) string {
+func FormatCommandHelp(cmd commandtypes.Desc) string {
 	help := FormatCommandShortHelp(cmd)
 	if cmd.Long != "" {
-		help += "\n\n" + Escape(cmd.Long)
+		help += "\n\n" + cmd.Long
 	}
 	return help
 }

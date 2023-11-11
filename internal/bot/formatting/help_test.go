@@ -4,19 +4,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/xopoww/standup/internal/bot/commands"
+	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
 	"github.com/xopoww/standup/internal/bot/formatting"
 )
 
 func TestFormatCommandShortHelp(t *testing.T) {
 	cc := []struct {
 		name string
-		cmd  commands.Desc
+		cmd  commandtypes.Desc
 		want string
 	}{
 		{
 			name: "simple",
-			cmd: commands.Desc{
+			cmd: commandtypes.Desc{
 				Name:  "foo",
 				Short: "test desc",
 			},
@@ -24,7 +24,7 @@ func TestFormatCommandShortHelp(t *testing.T) {
 		},
 		{
 			name: "with_usage",
-			cmd: commands.Desc{
+			cmd: commandtypes.Desc{
 				Name:  "foo",
 				Short: "test desc",
 				Usage: "<arg1> [arg2]",
@@ -32,10 +32,12 @@ func TestFormatCommandShortHelp(t *testing.T) {
 			want: "`/foo <arg1> [arg2]` test desc",
 		},
 		{
-			name: "escape",
-			cmd: commands.Desc{
+			// we don't escape commands descs because they should already be escaped
+			// see internal/bot/commands/commands.go
+			name: "no_escape",
+			cmd: commandtypes.Desc{
 				Name:  "foo",
-				Short: "test desc with dot.",
+				Short: "test desc with dot\\.",
 			},
 			want: "`/foo` test desc with dot\\.",
 		},
@@ -49,7 +51,7 @@ func TestFormatCommandShortHelp(t *testing.T) {
 }
 
 func TestFormatHelp(t *testing.T) {
-	cmds := []commands.Desc{
+	cmds := []commandtypes.Desc{
 		{
 			Name:  "foo",
 			Short: "foo command",
