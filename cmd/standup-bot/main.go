@@ -67,7 +67,7 @@ func main() {
 	}
 	srv, err := service.NewService(logger, *cfg.Service, service.Deps{
 		Bot:    tgBot,
-		Repo:   repo,
+		Models: repo,
 		Client: client,
 		Issuer: auth.NewStaticIssuer(pk),
 	})
