@@ -39,7 +39,7 @@ func (r *Repository) SetUserID(ctx context.Context, username string, id int64) e
 func (r *Repository) UpsertUser(ctx context.Context, user *models.User) error {
 	_, err := r.conn.Exec(ctx, `
 		INSERT INTO users (id, username, whitelisted) VALUES ($1, $2, false)
-		ON CONFLICT (id) DO UPDATE SET username = $2 WHERE id = $1
+		ON CONFLICT (id) DO UPDATE SET username = $2
 	`, user.ID, user.Username)
 	return err
 }

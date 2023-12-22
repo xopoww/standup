@@ -1,0 +1,18 @@
+bot:
+  api_endpoint: http://localhost:47901/bot%s/%s
+  token_file: $STANDUP_ROOT/test/configs/tg_token.txt
+  poll: {}
+  http_logging: true
+
+service:
+  whitelist_enabled: true
+
+database:
+  dbs:
+    postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+
+standup:
+  addr:
+    localhost:65000
+
+private_key_file: $STANDUP_ROOT/dev/keys/private.ec.key

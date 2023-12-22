@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package xopoww.tgmock;
+option go_package = "github.com/xopoww/standup/pkg/tgmock/control";
+
+import "tgmessage.proto";
+
+message Update {
+    int64 update_id = 1;
+
+    Message message = 2;
+}
+
+message CreateUpdateRequest {
+    Update update = 1;
+}
+
+message CreateUpdateResponse {}

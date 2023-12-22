@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package xopoww.tgmock;
+option go_package = "github.com/xopoww/standup/pkg/tgmock/control";
+
+import "tgmessage.proto";
+import "update.proto";
+
+service TGMockControl {
+    rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse) {}
+
+    rpc CreateUpdate(CreateUpdateRequest) returns (CreateUpdateResponse) {}
+}

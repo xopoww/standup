@@ -18,6 +18,7 @@ import (
 	"github.com/xopoww/standup/internal/common/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/config"
+	"github.com/xopoww/standup/pkg/tgmock/control"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,7 +31,10 @@ type Config struct {
 	} `yaml:"standup"`
 	Database struct {
 		DBS string `yaml:"dbs" validate:"required"`
-	}
+	} `yaml:"database"`
+	TGMock struct {
+		Addr string `yaml:"addr" validate:"required,hostname_port"`
+	} `yaml:"tgmock"`
 	Auth struct {
 		Enabled        bool   `yaml:"enabled"`
 		PrivateKeyFile string `yaml:"private_key_file" validate:"required_with=Enabled"`
@@ -41,8 +45,10 @@ type Config struct {
 var deps struct {
 	cfg *Config
 
-	client standup.StandupClient
-	db     *pgx.Conn
+	Client standup.StandupClient
+	DB     *pgx.Conn
+	TM     control.TGMockControlClient
+
 	logger *zap.Logger
 
 	jwtPrivateKey *ecdsa.PrivateKey
@@ -79,21 +85,30 @@ func runTests(m *testing.M) (int, error) {
 		deps.jwtPrivateKey = pk
 	}
 
-	conn, err := grpc.Dial(cfg.Standup.Addr,
+	sc, err := grpc.Dial(cfg.Standup.Addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(logging.UnaryClientInterceptor(deps.logger)),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("grpc dial: %w", err)
 	}
-	deps.client = standup.NewStandupClient(conn)
+	deps.Client = standup.NewStandupClient(sc)
+
+	tc, err := grpc.Dial(cfg.TGMock.Addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(logging.UnaryClientInterceptor(deps.logger)),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("grpc dial: %w", err)
+	}
+	deps.TM = control.NewTGMockControlClient(tc)
 
 	db, err := pgx.Connect(context.TODO(), cfg.Database.DBS)
 	if err != nil {
 		return 0, fmt.Errorf("db connect: %w", err)
 	}
 	defer db.Close(context.TODO())
-	deps.db = db
+	deps.DB = db
 
 	return m.Run(), nil
 }
