@@ -26,7 +26,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 }
 
 func (r *Repository) SetUserID(ctx context.Context, username string, id int64) error {
-	ct, err := r.conn.Exec(ctx, `UPDATE users SET id = $1 WHERE username = $2 AND id = NULL`, id, username)
+	ct, err := r.conn.Exec(ctx, `UPDATE users SET id = $1 WHERE username = $2 AND id IS NULL`, id, username)
 	if err != nil {
 		return err
 	}

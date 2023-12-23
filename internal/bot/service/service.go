@@ -99,6 +99,7 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 	msg := *u.Message
 
 	if allowed, err := s.handleMessageSender(ctx, msg); err != nil {
+		// do not report errs to unverified users
 		return err
 	} else if !allowed {
 		return nil
@@ -148,14 +149,11 @@ func (s *Service) handleMessageSender(ctx context.Context, msg tgbotapi.Message)
 	// TODO: rm after transition period
 	if _, err := s.deps.Models.GetUserByID(ctx, user.ID); errors.Is(err, dberrors.ErrNotFound) {
 		err := s.deps.Models.SetUserID(ctx, user.Username, user.ID)
-		if errors.Is(err, dberrors.ErrNotFound) {
-			// no such username in db - completely new user
-			err = nil
-		}
-		if err != nil {
+		if err == nil {
+			logging.L(ctx).Sugar().Infof("Set id for user %s.", user)
+		} else if !errors.Is(err, dberrors.ErrNotFound) {
 			return false, fmt.Errorf("set user id: %w", err)
 		}
-		logging.L(ctx).Sugar().Infof("Set id for user %s.", user)
 	}
 
 	if err := s.deps.Models.UpsertUser(ctx, user); err != nil {
@@ -166,7 +164,6 @@ func (s *Service) handleMessageSender(ctx context.Context, msg tgbotapi.Message)
 		return true, nil
 	}
 	allowed, err := s.deps.Models.GetWhitelisted(ctx, user.ID)
-	// do not report errs to unverified users
 	if err != nil {
 		return false, fmt.Errorf("check whitelist: %w", err)
 	}
