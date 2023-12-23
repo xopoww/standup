@@ -38,29 +38,26 @@ func (r *Repository) SetUserID(ctx context.Context, username string, id int64) e
 
 func (r *Repository) UpsertUser(ctx context.Context, user *models.User) error {
 	_, err := r.conn.Exec(ctx, `
-		INSERT INTO users (id, username, whitelisted) VALUES ($1, $2, false)
+		INSERT INTO users (id, username) VALUES ($1, $2)
 		ON CONFLICT (id) DO UPDATE SET username = $2
 	`, user.ID, user.Username)
 	return err
 }
 
 func (r *Repository) GetWhitelisted(ctx context.Context, userID int64) (bool, error) {
-	row := r.conn.QueryRow(ctx, `SELECT whitelisted FROM users WHERE id = $1`, userID)
+	row := r.conn.QueryRow(ctx, `SELECT whitelisted FROM user_whitelist WHERE user_id = $1`, userID)
 	whitelisted := false
 	err := row.Scan(&whitelisted)
 	if errors.Is(err, pgx.ErrNoRows) {
-		err = fmt.Errorf("user %d %w", userID, dberrors.ErrNotFound)
+		return false, nil
 	}
 	return whitelisted, err
 }
 
 func (r *Repository) SetWhitelisted(ctx context.Context, userID int64, whitelisted bool) error {
-	ct, err := r.conn.Exec(ctx, `UPDATE users SET whitelisted = $1 WHERE id = $2`, whitelisted, userID)
-	if err != nil {
-		return err
-	}
-	if ct.RowsAffected() == 0 {
-		return fmt.Errorf("user %d %w", userID, dberrors.ErrNotFound)
-	}
-	return nil
+	_, err := r.conn.Exec(ctx, `
+		INSERT INTO user_whitelist (user_id, whitelisted) VALUES ($1, $2)
+		ON CONFLICT (user_id) DO UPDATE SET whitelisted = $2
+	`, userID, whitelisted)
+	return err
 }

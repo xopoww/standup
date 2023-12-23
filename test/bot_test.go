@@ -7,32 +7,43 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/common/logging"
-	"github.com/xopoww/standup/internal/common/repository/dberrors"
 	"github.com/xopoww/standup/pkg/tgmock/tests"
 )
 
-func TestBot(t *testing.T) {
-	RunTest(t, "whitelist", func(ctx context.Context, t *testing.T) {
-		u := tests.ContextUser(ctx)
-		err := deps.Repo.SetWhitelisted(ctx, u.GetId(), true)
-		require.ErrorIs(t, err, dberrors.ErrNotFound)
+func TestBotWhitelist(t *testing.T) {
+	cc := []struct {
+		name        string
+		whitelisted bool
+	}{
+		{
+			name:        "allowed",
+			whitelisted: true,
+		},
+		{
+			name:        "restricted",
+			whitelisted: false,
+		},
+	}
+	for _, c := range cc {
+		RunTest(t, c.name, func(ctx context.Context, t *testing.T) {
+			user := tests.ContextUser(ctx)
+			chat := tests.ContextChat(ctx)
 
-		c := tests.ContextChat(ctx)
+			if c.whitelisted {
+				require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
+			}
 
-		mid := tests.SendMessage(ctx, t, deps.TM, u, c, "/start")
+			mid := tests.SendMessage(ctx, t, deps.TM, user, chat, "/start")
 
-		msgs := tests.WaitForMessagesTimeout(ctx, t, deps.TM, c, 1, time.Minute)
-		require.Contains(t, msgs[0].GetText(), "currently restricted")
-		require.Equal(t, mid, msgs[0].GetReplyToMessage().GetMessageId())
+			msg := tests.WaitForMessagesTimeout(ctx, t, deps.TM, chat, 1, time.Minute)[0]
+			if c.whitelisted {
+				require.NotContains(t, msg.GetText(), "currently restricted")
+			} else {
+				require.Contains(t, msg.GetText(), "currently restricted")
+				require.Equal(t, mid, msg.GetReplyToMessage().GetMessageId())
+			}
 
-		err = deps.Repo.SetWhitelisted(ctx, u.GetId(), true)
-		require.NoError(t, err)
-
-		tests.SendMessage(ctx, t, deps.TM, u, c, "/start")
-
-		msgs = tests.WaitForMessagesTimeout(ctx, t, deps.TM, c, 2, time.Minute)
-		require.NotContains(t, msgs[1].GetText(), "currently restricted")
-
-		logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", c.GetId(), tests.ChatHistory(ctx, t, deps.TM, c))
-	})
+			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
+		})
+	}
 }
