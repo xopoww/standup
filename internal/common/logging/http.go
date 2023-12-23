@@ -4,18 +4,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/xopoww/standup/internal/common/httputil"
 	"go.uber.org/zap"
 )
 
-type RoundTripperFunc func(*http.Request) (*http.Response, error)
-
-func (f RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
-	return f(r)
-}
-
 func RoundTripper(l *zap.Logger, inner http.RoundTripper) http.RoundTripper {
 	s := l.Sugar()
-	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+	return httputil.RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		s.Debugf("HTTP Req: %s %s.", r.Method, r.URL)
 
 		start := time.Now()

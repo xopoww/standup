@@ -10,6 +10,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/xopoww/standup/internal/common/httputil"
 	"github.com/xopoww/standup/internal/common/logging"
 )
 
@@ -18,10 +19,16 @@ type bot struct {
 
 	tb *tgbotapi.BotAPI
 	uc tgbotapi.UpdatesChannel
+
+	cancelBotRequests chan struct{}
 }
 
 func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 	cfg.SetDefaults()
+	b := &bot{
+		cfg:               cfg,
+		cancelBotRequests: make(chan struct{}),
+	}
 
 	data, err := os.ReadFile(cfg.TokenFile)
 	if err != nil {
@@ -29,18 +36,18 @@ func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 	}
 	token := strings.TrimSpace(string(data))
 
-	client := &http.Client{}
+	transport := http.DefaultTransport
 	if cfg.HTTPLogging {
-		client.Transport = logging.RoundTripper(logging.L(ctx), http.DefaultTransport)
+		transport = logging.RoundTripper(logging.L(ctx), transport)
 	}
-	tb, err := tgbotapi.NewBotAPIWithClient(token, cfg.APIEndpoint, client)
+	transport = httputil.CancellableRoundTripper(b.cancelBotRequests, transport)
+	tb, err := tgbotapi.NewBotAPIWithClient(token, cfg.APIEndpoint, &http.Client{Transport: transport})
 	if err != nil {
 		return nil, fmt.Errorf("new bot api: %w", err)
 	}
 	tb.Debug = devel
 	logging.L(ctx).Sugar().Infof("Authorized as %q.", tb.Self.UserName)
-
-	b := &bot{cfg: cfg, tb: tb}
+	b.tb = tb
 
 	switch {
 	case cfg.Poll != nil:
@@ -73,4 +80,5 @@ func (b *bot) Send(m tgbotapi.Chattable) (tgbotapi.Message, error) {
 
 func (b *bot) Stop() {
 	b.tb.StopReceivingUpdates()
+	close(b.cancelBotRequests)
 }
