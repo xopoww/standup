@@ -17,7 +17,8 @@ type Config struct {
 	Service *service.Config `yaml:"service" validate:"required"`
 
 	Standup *struct {
-		Addr string `yaml:"addr" validate:"required,hostname_port"`
+		Addr    string `yaml:"addr" validate:"required,hostname_port"`
+		Logging bool   `yaml:"logging"`
 	} `yaml:"standup" validate:"required"`
 
 	PrivateKeyFile string `yaml:"private_key_file" validate:"required,file"`

@@ -24,6 +24,7 @@ func ChatHistory(ctx context.Context, t require.TestingT, tm control.TGMockContr
 		fmt.Fprintf(bldr, headerFormat, date.Format(dateFormat), msg.GetFrom().GetUsername())
 		if msg.GetReplyToMessage() != nil {
 			writePaddedText(bldr, "> %s\n", renderMarkdownV2Text(msg.GetReplyToMessage().GetText()))
+			bldr.WriteString(padding)
 		}
 		writePaddedText(bldr, "%s\n", renderMarkdownV2Text(msg.GetText()))
 	}

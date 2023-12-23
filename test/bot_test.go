@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/xopoww/standup/internal/bot/formatting"
 	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/tgmock/tests"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestBotWhitelist(t *testing.T) {
@@ -26,9 +29,12 @@ func TestBotWhitelist(t *testing.T) {
 	}
 	for _, c := range cc {
 		RunTest(t, c.name, func(ctx context.Context, t *testing.T) {
-			user := tests.ContextUser(ctx)
 			chat := tests.ContextChat(ctx)
+			defer func() {
+				logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
+			}()
 
+			user := tests.ContextUser(ctx)
 			if c.whitelisted {
 				require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
 			}
@@ -42,16 +48,18 @@ func TestBotWhitelist(t *testing.T) {
 				require.Contains(t, msg.GetText(), "currently restricted")
 				require.Equal(t, mid, msg.GetReplyToMessage().GetMessageId())
 			}
-
-			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
 		})
 	}
 }
 
 func TestBotHelp(t *testing.T) {
 	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
-		user := tests.ContextUser(ctx)
 		chat := tests.ContextChat(ctx)
+		defer func() {
+			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
+		}()
+
+		user := tests.ContextUser(ctx)
 		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
 
 		// basic help
@@ -68,7 +76,57 @@ func TestBotHelp(t *testing.T) {
 		tests.SendMessage(ctx, t, deps.TM, user, chat, "/help foobar")
 		msg = tests.WaitForMessagesSince(ctx, t, deps.TM, chat, 1, time.Minute, msg.GetMessageId())[0]
 		require.Contains(t, msg.GetText(), "Available commands")
+	})
+}
 
-		logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
+func TestBotCreateMessage(t *testing.T) {
+	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+		chat := tests.ContextChat(ctx)
+		defer func() {
+			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
+		}()
+
+		user := tests.ContextUser(ctx)
+		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
+
+		const text = "Some text message."
+		from := time.Now()
+		tests.SendMessage(ctx, t, deps.TM, user, chat, text)
+		msg := tests.WaitForMessages(ctx, t, deps.TM, chat, 1, time.Minute)[0]
+		require.Contains(t, msg.GetText(), "Created message")
+
+		rsp, err := deps.Client.ListMessages(withToken(ctx, t, user.GetUsername()),
+			&standup.ListMessagesRequest{
+				OwnerId: user.GetUsername(),
+				From:    timestamppb.New(from),
+				To:      timestamppb.Now(),
+			},
+		)
+		require.NoError(t, err)
+		require.Len(t, rsp.GetMessages(), 1)
+		require.Equal(t, text, rsp.GetMessages()[0].GetText())
+		require.Contains(t, msg.GetText(), rsp.GetMessages()[0].GetId())
+	})
+}
+
+func TestBotReport(t *testing.T) {
+	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+		chat := tests.ContextChat(ctx)
+		defer func() {
+			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
+		}()
+
+		user := tests.ContextUser(ctx)
+		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
+
+		const text = "Some text message."
+		tests.SendMessage(ctx, t, deps.TM, user, chat, text)
+		msg := tests.WaitForMessages(ctx, t, deps.TM, chat, 1, time.Minute)[0]
+		require.Contains(t, msg.GetText(), "Created message")
+
+		tests.SendMessage(ctx, t, deps.TM, user, chat, "/report -1d")
+		msg = tests.WaitForMessagesSince(ctx, t, deps.TM, chat, 1, time.Minute, msg.GetMessageId())[0]
+		require.Contains(t, msg.GetText(), "Report")
+		require.Contains(t, msg.GetText(), formatting.Escape(text))
 	})
 }

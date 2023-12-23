@@ -54,8 +54,11 @@ func main() {
 		logger.Sugar().Fatalf("Init telegram bot: %s.", err)
 	}
 
-	conn, err := grpc.DialContext(ctx, cfg.Standup.Addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	if cfg.Standup.Logging {
+		opts = append(opts, grpc.WithUnaryInterceptor(logging.UnaryClientInterceptor(logger)))
+	}
+	conn, err := grpc.DialContext(ctx, cfg.Standup.Addr, opts...)
 	if err != nil {
 		logger.Sugar().Fatalf("Dial GRPC: %s.", err)
 	}
