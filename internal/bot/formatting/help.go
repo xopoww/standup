@@ -4,6 +4,10 @@ import (
 	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
 )
 
+func FormatStart() string {
+	return MustRenderTemplate(`Welcome! Type {{ mono "/help" }} to see what this bot can do.`, nil)
+}
+
 func FormatHelp(cmds []commandtypes.Desc) string {
 	data := struct {
 		Text string
