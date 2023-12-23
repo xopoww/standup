@@ -15,4 +15,6 @@ message CreateUpdateRequest {
     Update update = 1;
 }
 
-message CreateUpdateResponse {}
+message CreateUpdateResponse {
+    int64 message_id = 1; // if update contained a message
+}

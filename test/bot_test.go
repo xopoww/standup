@@ -6,34 +6,33 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/xopoww/standup/pkg/tgmock/control"
+	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/repository/dberrors"
+	"github.com/xopoww/standup/pkg/tgmock/tests"
 )
 
 func TestBot(t *testing.T) {
-	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
-		_, err := deps.TM.CreateUpdate(ctx, &control.CreateUpdateRequest{
-			Update: &control.Update{
-				Message: &control.Message{
-					From: &control.User{
-						Id:       12345,
-						Username: "test-user",
-					},
-					Date: time.Now().Unix(),
-					Chat: &control.Chat{
-						Id: 12345,
-					},
-					Text: "/start",
-				},
-			},
-		})
+	RunTest(t, "whitelist", func(ctx context.Context, t *testing.T) {
+		u := tests.ContextUser(ctx)
+		err := deps.Repo.SetWhitelisted(ctx, u.GetId(), true)
+		require.ErrorIs(t, err, dberrors.ErrNotFound)
+
+		c := tests.ContextChat(ctx)
+
+		mid := tests.SendMessage(ctx, t, deps.TM, u, c, "/start")
+
+		msgs := tests.WaitForMessagesTimeout(ctx, t, deps.TM, c, 1, time.Minute)
+		require.Contains(t, msgs[0].GetText(), "currently restricted")
+		require.Equal(t, mid, msgs[0].GetReplyToMessage().GetMessageId())
+
+		err = deps.Repo.SetWhitelisted(ctx, u.GetId(), true)
 		require.NoError(t, err)
 
-		time.Sleep(time.Second)
+		tests.SendMessage(ctx, t, deps.TM, u, c, "/start")
 
-		rsp, err := deps.TM.ListMessages(ctx, &control.ListMessagesRequest{
-			ChatId: 12345,
-		})
-		require.NoError(t, err)
-		require.Len(t, rsp.GetMessages(), 1)
+		msgs = tests.WaitForMessagesTimeout(ctx, t, deps.TM, c, 2, time.Minute)
+		require.NotContains(t, msgs[1].GetText(), "currently restricted")
+
+		logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", c.GetId(), tests.ChatHistory(ctx, t, deps.TM, c))
 	})
 }

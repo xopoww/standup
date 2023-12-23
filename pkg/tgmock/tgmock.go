@@ -81,3 +81,12 @@ func (tm *TGMock) addMessage(ctx context.Context, msg *control.Message) {
 	logging.L(ctx).Sugar().Debugf("Add message %d to chat %d.", msg.GetMessageId(), chatID)
 	tm.chats[chatID] = append(tm.chats[chatID], msg)
 }
+
+// getMessage must be called only from under lock
+func (tm *TGMock) getMessage(chatID, messageID int64) (*control.Message, error) {
+	i := messageID - 1
+	if i < 0 || i >= int64(len(tm.chats[chatID])) {
+		return nil, fmt.Errorf("no message %d in chat %d", messageID, chatID)
+	}
+	return tm.chats[chatID][i], nil
+}

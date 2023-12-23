@@ -15,10 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/internal/common/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/config"
 	"github.com/xopoww/standup/pkg/tgmock/control"
+	"github.com/xopoww/standup/pkg/tgmock/tests"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -47,6 +49,7 @@ var deps struct {
 
 	Client standup.StandupClient
 	DB     *pgx.Conn
+	Repo   *pg.Repository
 	TM     control.TGMockControlClient
 
 	logger *zap.Logger
@@ -110,6 +113,13 @@ func runTests(m *testing.M) (int, error) {
 	defer db.Close(context.TODO())
 	deps.DB = db
 
+	repo, err := pg.NewRepository(context.TODO(), cfg.Database.DBS)
+	if err != nil {
+		return 0, fmt.Errorf("new repo: %w", err)
+	}
+	defer repo.Close(context.TODO())
+	deps.Repo = repo
+
 	return m.Run(), nil
 }
 
@@ -127,12 +137,24 @@ type testFunc func(context.Context, *testing.T)
 func RunTest(t *testing.T, name string, f testFunc, opts ...func(context.Context) context.Context) {
 	ctx, cancel := testutil.NewContext(context.Background())
 	defer cancel()
+
 	ctx = logging.WithLogger(ctx, deps.logger)
+
+	uid, err := tests.GenerateID()
+	require.NoError(t, err)
+	ctx = tests.WithUserID(ctx, uid)
+
+	cid, err := tests.GenerateID()
+	require.NoError(t, err)
+	ctx = tests.WithChatID(ctx, cid)
+
+	logging.L(ctx).Sugar().Debugf("Using user %d and chat %d for test %q.", uid, cid, testutil.TestID(ctx))
+
 	for _, opt := range opts {
 		ctx = opt(ctx)
 	}
 	t.Run(name, func(tt *testing.T) {
-		logging.L(ctx).Sugar().Infof("Running %s with ID %q...", t.Name(), testutil.TestID(ctx))
+		logging.L(ctx).Sugar().Infof("Running %s with ID %q...", tt.Name(), testutil.TestID(ctx))
 		f(ctx, tt)
 	})
 }

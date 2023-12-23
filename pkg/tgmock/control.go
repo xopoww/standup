@@ -21,7 +21,7 @@ func (tm *TGMock) ListMessages(_ context.Context, req *control.ListMessagesReque
 	defer tm.mx.Unlock()
 	rsp := &control.ListMessagesResponse{}
 	for _, msg := range tm.chats[req.GetChatId()] {
-		if msg.GetFrom().GetId() == tm.me().GetId() {
+		if req.GetAll() || msg.GetFrom().GetId() == tm.me().GetId() {
 			rsp.Messages = append(rsp.GetMessages(), msg)
 		}
 	}
@@ -31,11 +31,15 @@ func (tm *TGMock) ListMessages(_ context.Context, req *control.ListMessagesReque
 func (tm *TGMock) CreateUpdate(ctx context.Context, req *control.CreateUpdateRequest) (*control.CreateUpdateResponse, error) {
 	tm.mx.Lock()
 	defer tm.mx.Unlock()
+	rsp := &control.CreateUpdateResponse{}
+
 	if msg := req.GetUpdate().GetMessage(); msg != nil {
 		tm.addMessage(ctx, msg)
+		rsp.MessageId = msg.GetMessageId()
 	}
+
 	upd := req.GetUpdate()
 	upd.UpdateId = int64(len(tm.updates))
 	tm.updates = append(tm.updates, upd)
-	return &control.CreateUpdateResponse{}, nil
+	return rsp, nil
 }
