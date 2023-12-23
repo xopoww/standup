@@ -12,6 +12,12 @@ message Chat {
     int64 id = 1;
 }
 
+message MessageEntity {
+    string type = 1;
+    int32 offset = 2;
+    int32 length = 3;
+}
+
 message Message {
     int64 message_id = 1;
 
@@ -42,6 +48,7 @@ message Message {
     // author_signature      = 20;
 
     string text = 21;
+    repeated MessageEntity entities = 22;
 }
 
 message ListMessagesRequest {

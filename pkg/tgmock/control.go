@@ -3,6 +3,7 @@ package tgmock
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/xopoww/standup/internal/common/logging"
 	"github.com/xopoww/standup/pkg/tgmock/control"
@@ -34,6 +35,11 @@ func (tm *TGMock) CreateUpdate(ctx context.Context, req *control.CreateUpdateReq
 	rsp := &control.CreateUpdateResponse{}
 
 	if msg := req.GetUpdate().GetMessage(); msg != nil {
+		entities, err := parseMessageEntities(msg.GetText())
+		if err != nil {
+			return nil, fmt.Errorf("invalid message text: %w", err)
+		}
+		msg.Entities = entities
 		tm.addMessage(ctx, msg)
 		rsp.MessageId = msg.GetMessageId()
 	}
