@@ -22,7 +22,7 @@ func FormatHelp(cmds []commandtypes.Desc) string {
 
 Send a message to this bot to save it.
 
-Availible commands (run {{ mono "/help <command>" }} for more info):
+Available commands (run {{ mono "/help <command>" }} for more info):
 
 {{ range .Cmds }}- {{ call $.FormatCommandShortHelp . }}
 {{end}}`, data)

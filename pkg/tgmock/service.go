@@ -50,8 +50,7 @@ func (tm *TGMock) handleSendMessage(r *http.Request) (any, error) {
 		Chat: &control.Chat{
 			Id: chatID,
 		},
-		ReplyToMessage: &control.Message{},
-		Text:           r.Form.Get("text"),
+		Text: r.Form.Get("text"),
 	}
 	if replyToMessageID, err := mustGetInt(r.Form, "reply_to_message_id"); err == nil {
 		replyToMessage, err := tm.getMessage(chatID, replyToMessageID)

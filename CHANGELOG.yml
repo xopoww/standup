@@ -3,3 +3,4 @@ v0.0.3:
   - Started a changelog.
   bot:
   - Added '/start' command.
+  - Fixed some typos.

@@ -70,7 +70,7 @@ func TestFormatHelp(t *testing.T) {
 
 	s := formatting.FormatHelp(cmds)
 	require.Contains(t, s, "This bot can be used")
-	require.Contains(t, s, "Availible commands \\(run `/help <command>` for more info\\):\n\n")
+	require.Contains(t, s, "Available commands \\(run `/help <command>` for more info\\):\n\n")
 	require.Contains(t, s, "\\- `/foo` foo command\n")
 	require.Contains(t, s, "\\- `/bar <arg1>` bar command\n")
 	require.Contains(t, s, "\\- `/baz` baz command\n")

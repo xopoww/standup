@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -20,12 +21,54 @@ func ChatHistory(ctx context.Context, t require.TestingT, tm control.TGMockContr
 	bldr := &strings.Builder{}
 	for _, msg := range rsp.GetMessages() {
 		date := time.Unix(msg.GetDate(), 0).Local()
-		fmt.Fprintf(bldr, "\t\t%17s %32s : ", date.Format("02-01-06 15:04:05"), msg.GetFrom().GetUsername())
+		fmt.Fprintf(bldr, headerFormat, date.Format(dateFormat), msg.GetFrom().GetUsername())
 		if msg.GetReplyToMessage() != nil {
-			fmt.Fprintf(bldr, "> %s\n", msg.GetReplyToMessage().GetText())
-			fmt.Fprintf(bldr, "\t\t%17s %32s   ", "", "")
+			writePaddedText(bldr, "> %s\n", renderMarkdownV2Text(msg.GetReplyToMessage().GetText()))
 		}
-		fmt.Fprintf(bldr, "%s\n", msg.GetText())
+		writePaddedText(bldr, "%s\n", renderMarkdownV2Text(msg.GetText()))
 	}
 	return bldr.String()
 }
+
+func renderMarkdownV2Text(text string) string {
+	bldr := &strings.Builder{}
+
+	escaped := false
+	for _, b := range text {
+		if escaped {
+			bldr.WriteRune(b)
+			escaped = false
+			continue
+		}
+		switch b {
+		case '\\':
+			escaped = true
+			continue
+		default:
+			bldr.WriteRune(b)
+		}
+	}
+	return bldr.String()
+}
+
+func writePaddedText(w io.Writer, lineFormat, text string) {
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		fmt.Fprintf(w, lineFormat, line)
+		if i+1 < len(lines) {
+			fmt.Fprint(w, padding)
+		}
+	}
+}
+
+const (
+	basePadding   = "\t\t"
+	dateFormat    = "02-01-06 15:04:05"
+	dateWidth     = len(dateFormat) + 1
+	usernameWidth = 32 + 1
+)
+
+var (
+	headerFormat = basePadding + fmt.Sprintf("%%%ds", dateWidth) + fmt.Sprintf("%%%ds", usernameWidth) + " : "
+	padding      = basePadding + strings.Repeat(" ", dateWidth+usernameWidth) + "   "
+)

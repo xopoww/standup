@@ -22,6 +22,9 @@ func (tm *TGMock) ListMessages(_ context.Context, req *control.ListMessagesReque
 	defer tm.mx.Unlock()
 	rsp := &control.ListMessagesResponse{}
 	for _, msg := range tm.chats[req.GetChatId()] {
+		if req.GetSinceId() > 0 && msg.GetMessageId() <= req.GetSinceId() {
+			continue
+		}
 		if req.GetAll() || msg.GetFrom().GetId() == tm.me().GetId() {
 			rsp.Messages = append(rsp.GetMessages(), msg)
 		}

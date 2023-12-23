@@ -35,7 +35,7 @@ func TestBotWhitelist(t *testing.T) {
 
 			mid := tests.SendMessage(ctx, t, deps.TM, user, chat, "/start")
 
-			msg := tests.WaitForMessagesTimeout(ctx, t, deps.TM, chat, 1, time.Minute)[0]
+			msg := tests.WaitForMessages(ctx, t, deps.TM, chat, 1, time.Minute)[0]
 			if c.whitelisted {
 				require.NotContains(t, msg.GetText(), "currently restricted")
 			} else {
@@ -46,4 +46,29 @@ func TestBotWhitelist(t *testing.T) {
 			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
 		})
 	}
+}
+
+func TestBotHelp(t *testing.T) {
+	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+		user := tests.ContextUser(ctx)
+		chat := tests.ContextChat(ctx)
+		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
+
+		// basic help
+		tests.SendMessage(ctx, t, deps.TM, user, chat, "/help")
+		msg := tests.WaitForMessages(ctx, t, deps.TM, chat, 1, time.Minute)[0]
+		require.Contains(t, msg.GetText(), "Available commands")
+
+		// help about one command
+		tests.SendMessage(ctx, t, deps.TM, user, chat, "/help report")
+		msg = tests.WaitForMessagesSince(ctx, t, deps.TM, chat, 1, time.Minute, msg.GetMessageId())[0]
+		require.Contains(t, msg.GetText(), "Get messages")
+
+		// help about unexisting command
+		tests.SendMessage(ctx, t, deps.TM, user, chat, "/help foobar")
+		msg = tests.WaitForMessagesSince(ctx, t, deps.TM, chat, 1, time.Minute, msg.GetMessageId())[0]
+		require.Contains(t, msg.GetText(), "Available commands")
+
+		logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
+	})
 }
