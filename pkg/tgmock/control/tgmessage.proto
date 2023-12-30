@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package xopoww.tgmock;
+option go_package = "github.com/xopoww/standup/pkg/tgmock/control";
+
+message User {
+    int64 id = 1;
+    string username = 2;
+}
+
+message Chat {
+    int64 id = 1;
+}
+
+message MessageEntity {
+    string type = 1;
+    int32 offset = 2;
+    int32 length = 3;
+}
+
+message Message {
+    int64 message_id = 1;
+
+    // message_thread_id = 2
+    
+    User from = 3;
+    
+    // sender_chat = 4;
+    
+    int64 date = 5;
+    Chat chat = 6;
+
+    // forward_from            = 7;
+    // forward_from_chat       = 8;
+    // forward_from_message_id = 9;
+    // forward_signature       = 10;
+    // forward_sender_name     = 11;
+    // forward_date            = 12;
+    // is_topic_message        = 13;
+    // is_automatic_forward    = 14;
+
+    Message reply_to_message = 15;
+
+    // via_bot               = 16;
+    // edit_date             = 17;
+    // has_protected_content = 18;
+    // media_group_id        = 19;
+    // author_signature      = 20;
+
+    string text = 21;
+    repeated MessageEntity entities = 22;
+}
+
+message ListMessagesRequest {
+    int64 chat_id = 1;
+    int64 since_id = 2;
+
+    bool all = 3;
+}
+
+message ListMessagesResponse {
+    repeated Message messages = 1;
+}

@@ -4,6 +4,10 @@ import (
 	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
 )
 
+func FormatStart() string {
+	return MustRenderTemplate(`Welcome! Type {{ mono "/help" }} to see what this bot can do.`, nil)
+}
+
 func FormatHelp(cmds []commandtypes.Desc) string {
 	data := struct {
 		Text string
@@ -18,7 +22,7 @@ func FormatHelp(cmds []commandtypes.Desc) string {
 
 Send a message to this bot to save it.
 
-Availible commands (run {{ mono "/help <command>" }} for more info):
+Available commands (run {{ mono "/help <command>" }} for more info):
 
 {{ range .Cmds }}- {{ call $.FormatCommandShortHelp . }}
 {{end}}`, data)

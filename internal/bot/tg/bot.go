@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/xopoww/standup/internal/common/httputil"
 	"github.com/xopoww/standup/internal/common/logging"
 )
 
@@ -16,10 +19,16 @@ type bot struct {
 
 	tb *tgbotapi.BotAPI
 	uc tgbotapi.UpdatesChannel
+
+	cancelBotRequests chan struct{}
 }
 
 func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 	cfg.SetDefaults()
+	b := &bot{
+		cfg:               cfg,
+		cancelBotRequests: make(chan struct{}),
+	}
 
 	data, err := os.ReadFile(cfg.TokenFile)
 	if err != nil {
@@ -27,14 +36,18 @@ func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 	}
 	token := strings.TrimSpace(string(data))
 
-	tb, err := tgbotapi.NewBotAPI(token)
+	transport := http.DefaultTransport
+	if cfg.HTTPLogging {
+		transport = logging.RoundTripper(logging.L(ctx), transport)
+	}
+	transport = httputil.CancellableRoundTripper(b.cancelBotRequests, transport)
+	tb, err := tgbotapi.NewBotAPIWithClient(token, cfg.APIEndpoint, &http.Client{Transport: transport})
 	if err != nil {
 		return nil, fmt.Errorf("new bot api: %w", err)
 	}
 	tb.Debug = devel
 	logging.L(ctx).Sugar().Infof("Authorized as %q.", tb.Self.UserName)
-
-	b := &bot{cfg: cfg, tb: tb}
+	b.tb = tb
 
 	switch {
 	case cfg.Poll != nil:
@@ -52,7 +65,7 @@ func NewBot(ctx context.Context, cfg Config, devel bool) (Bot, error) {
 
 func (b *bot) initLongPolling(ctx context.Context) {
 	uCfg := tgbotapi.NewUpdate(0)
-	uCfg.Timeout = int(b.cfg.Poll.Timeout)
+	uCfg.Timeout = int(b.cfg.Poll.Timeout / time.Second)
 	logging.L(ctx).Sugar().Infof("Starting long polling (t/o %s) for updates...", b.cfg.Poll.Timeout)
 	b.uc = b.tb.GetUpdatesChan(uCfg)
 }
@@ -67,4 +80,5 @@ func (b *bot) Send(m tgbotapi.Chattable) (tgbotapi.Message, error) {
 
 func (b *bot) Stop() {
 	b.tb.StopReceivingUpdates()
+	close(b.cancelBotRequests)
 }

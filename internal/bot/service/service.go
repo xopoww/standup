@@ -11,11 +11,11 @@ import (
 	"github.com/xopoww/standup/internal/bot/commands"
 	"github.com/xopoww/standup/internal/bot/commands/commandtypes"
 	"github.com/xopoww/standup/internal/bot/formatting"
+	"github.com/xopoww/standup/internal/bot/models"
 	"github.com/xopoww/standup/internal/bot/tg"
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
 	"github.com/xopoww/standup/internal/common/repository/dberrors"
-	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -24,7 +24,7 @@ import (
 
 type Deps struct {
 	Bot    tg.Bot
-	Repo   *pg.Repository
+	Models models.Models
 	Client standup.StandupClient
 	Issuer auth.Issuer
 }
@@ -98,20 +98,11 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 	}
 	msg := *u.Message
 
-	if s.cfg.WhitelistEnabled {
-		allowed, err := s.checkWhitelist(ctx, msg.From.UserName)
+	if allowed, err := s.handleMessageSender(ctx, msg); err != nil {
 		// do not report errs to unverified users
-		if err != nil {
-			return fmt.Errorf("check whitelist: %w", err)
-		}
-		if !allowed {
-			logging.L(ctx).Sugar().Debugf("User %q is not in whitelist, access denied.", msg.From.UserName)
-			_, err = s.deps.Bot.Send(tg.NewReplyf(msg, formatting.UsageRestricted))
-			if err != nil {
-				return err
-			}
-			return nil
-		}
+		return err
+	} else if !allowed {
+		return nil
 	}
 
 	var err error
@@ -122,6 +113,8 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 		err = s.getReport(ctx, msg)
 	case "help":
 		err = s.help(ctx, msg)
+	case "start":
+		err = s.start(ctx, msg)
 	default:
 		err = formatting.NewSyntaxErrorf("unknown command %q", cmd)
 	}
@@ -150,13 +143,35 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 	return err
 }
 
-func (s *Service) checkWhitelist(ctx context.Context, username string) (bool, error) {
-	user, err := s.deps.Repo.GetUser(ctx, username)
-	if errors.Is(err, dberrors.ErrNotFound) {
-		return false, nil
+func (s *Service) handleMessageSender(ctx context.Context, msg tgbotapi.Message) (bool, error) {
+	user := models.FromTG(msg.From)
+
+	// TODO: rm after transition period
+	if _, err := s.deps.Models.GetUserByID(ctx, user.ID); errors.Is(err, dberrors.ErrNotFound) {
+		err := s.deps.Models.SetUserID(ctx, user.Username, user.ID)
+		if err == nil {
+			logging.L(ctx).Sugar().Infof("Set id for user %s.", user)
+		} else if !errors.Is(err, dberrors.ErrNotFound) {
+			return false, fmt.Errorf("set user id: %w", err)
+		}
 	}
+
+	if err := s.deps.Models.UpsertUser(ctx, user); err != nil {
+		return false, fmt.Errorf("upsert user: %w", err)
+	}
+
+	if !s.cfg.WhitelistEnabled {
+		return true, nil
+	}
+	allowed, err := s.deps.Models.GetWhitelisted(ctx, user.ID)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("check whitelist: %w", err)
 	}
-	return user.Whitelisted, nil
+
+	if allowed {
+		return true, nil
+	}
+	logging.L(ctx).Sugar().Debugf("User %s is not in whitelist, access denied.", user)
+	_, err = s.deps.Bot.Send(tg.NewReplyf(msg, formatting.UsageRestricted))
+	return false, err
 }

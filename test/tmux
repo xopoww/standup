@@ -32,6 +32,14 @@ tmux send-keys "docker run --rm --name $POSTGRES_CONTAINER \
     -p5432:5432 -e POSTGRES_PASSWORD=postgres \
     postgres" Enter
 
+tmux new-window -n "tgmock" ; $sleep
+tmux send-keys "cd ./cmd/tgmock" Enter
+tmux send-keys "go run -race . -config <(envsubst < ../../test/configs/tgmock_config.yaml)" Enter
+
+tmux new-window -n "bot" ; $sleep
+tmux send-keys "cd ./cmd/standup-bot" Enter
+tmux send-keys "go run -race . -config <(envsubst < ../../test/configs/bot_config.yaml)" Enter
+
 $sleep ; $sleep ; $sleep
 
 tmux select-window -t 0

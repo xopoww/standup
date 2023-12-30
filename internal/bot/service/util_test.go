@@ -37,7 +37,7 @@ func RunTest(name string, t *testing.T, f testFunc) {
 		cfg := service.Config{WhitelistEnabled: false}
 		srv, err := service.NewService(logging.L(ctx), cfg, service.Deps{
 			Bot:    bot,
-			Repo:   nil,
+			Models: nil,
 			Client: sc,
 			Issuer: TestIssuer{},
 		})

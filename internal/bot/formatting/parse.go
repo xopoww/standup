@@ -23,7 +23,7 @@ func Escapef(format string, a ...any) string {
 }
 
 func Bold(s string) string {
-	return "**" + s + "**"
+	return "*" + s + "*"
 }
 
 func Mono(s string) string {

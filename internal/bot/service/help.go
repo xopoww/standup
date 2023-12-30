@@ -30,3 +30,8 @@ func (s *Service) help(_ context.Context, tm tgbotapi.Message) (err error) {
 	}
 	return err
 }
+
+func (s *Service) start(_ context.Context, tm tgbotapi.Message) error {
+	_, err := s.deps.Bot.Send(tg.NewMessagef(tm.Chat.ID, formatting.FormatStart()))
+	return err
+}

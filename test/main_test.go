@@ -15,9 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
+	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/internal/common/testutil"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/config"
+	"github.com/xopoww/standup/pkg/tgmock/control"
+	"github.com/xopoww/standup/pkg/tgmock/tests"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,7 +33,10 @@ type Config struct {
 	} `yaml:"standup"`
 	Database struct {
 		DBS string `yaml:"dbs" validate:"required"`
-	}
+	} `yaml:"database"`
+	TGMock struct {
+		Addr string `yaml:"addr" validate:"required,hostname_port"`
+	} `yaml:"tgmock"`
 	Auth struct {
 		Enabled        bool   `yaml:"enabled"`
 		PrivateKeyFile string `yaml:"private_key_file" validate:"required_with=Enabled"`
@@ -41,8 +47,11 @@ type Config struct {
 var deps struct {
 	cfg *Config
 
-	client standup.StandupClient
-	db     *pgx.Conn
+	Client standup.StandupClient
+	DB     *pgx.Conn
+	Repo   *pg.Repository
+	TM     control.TGMockControlClient
+
 	logger *zap.Logger
 
 	jwtPrivateKey *ecdsa.PrivateKey
@@ -79,21 +88,37 @@ func runTests(m *testing.M) (int, error) {
 		deps.jwtPrivateKey = pk
 	}
 
-	conn, err := grpc.Dial(cfg.Standup.Addr,
+	sc, err := grpc.Dial(cfg.Standup.Addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(logging.UnaryClientInterceptor(deps.logger)),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("grpc dial: %w", err)
 	}
-	deps.client = standup.NewStandupClient(conn)
+	deps.Client = standup.NewStandupClient(sc)
+
+	tc, err := grpc.Dial(cfg.TGMock.Addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(logging.UnaryClientInterceptor(deps.logger)),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("grpc dial: %w", err)
+	}
+	deps.TM = control.NewTGMockControlClient(tc)
 
 	db, err := pgx.Connect(context.TODO(), cfg.Database.DBS)
 	if err != nil {
 		return 0, fmt.Errorf("db connect: %w", err)
 	}
 	defer db.Close(context.TODO())
-	deps.db = db
+	deps.DB = db
+
+	repo, err := pg.NewRepository(context.TODO(), cfg.Database.DBS)
+	if err != nil {
+		return 0, fmt.Errorf("new repo: %w", err)
+	}
+	defer repo.Close(context.TODO())
+	deps.Repo = repo
 
 	return m.Run(), nil
 }
@@ -112,14 +137,36 @@ type testFunc func(context.Context, *testing.T)
 func RunTest(t *testing.T, name string, f testFunc, opts ...func(context.Context) context.Context) {
 	ctx, cancel := testutil.NewContext(context.Background())
 	defer cancel()
+
 	ctx = logging.WithLogger(ctx, deps.logger)
+
 	for _, opt := range opts {
 		ctx = opt(ctx)
 	}
 	t.Run(name, func(tt *testing.T) {
-		logging.L(ctx).Sugar().Infof("Running %s with ID %q...", t.Name(), testutil.TestID(ctx))
+		logging.L(ctx).Sugar().Infof("Running %s with ID %q...", tt.Name(), testutil.TestID(ctx))
 		f(ctx, tt)
 	})
+}
+
+func RunBotTest(t *testing.T, name string, f testFunc, opts ...func(context.Context) context.Context) {
+	RunTest(t, name, func(ctx context.Context, t *testing.T) {
+		uid, err := tests.GenerateID()
+		require.NoError(t, err)
+		ctx = tests.WithUserID(ctx, uid)
+
+		cid, err := tests.GenerateID()
+		require.NoError(t, err)
+		ctx = tests.WithChatID(ctx, cid)
+		t.Cleanup(func() {
+			logging.L(ctx).Sugar().Debugf(
+				"Chat %d history:\n\n%s", cid,
+				tests.ChatHistory(ctx, t, deps.TM, tests.ContextChat(ctx)))
+		})
+
+		logging.L(ctx).Sugar().Debugf("Using user %d and chat %d for test %q.", uid, cid, testutil.TestID(ctx))
+		f(ctx, t)
+	}, opts...)
 }
 
 func withToken(ctx context.Context, t *testing.T, subjectID string) context.Context {

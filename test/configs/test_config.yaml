@@ -6,6 +6,10 @@ standup:
   addr:
     localhost:65000
 
+tgmock:
+  addr:
+    localhost:47900
+
 auth:
   enabled: true
   private_key_file: $STANDUP_ROOT/dev/keys/private.ec.key

@@ -18,11 +18,11 @@ func TestCreateMessage(t *testing.T) {
 		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
 
 		req := testutil.CreateMessageRequest(ctx)
-		rsp, err := deps.client.CreateMessage(ctx, req)
+		rsp, err := deps.Client.CreateMessage(ctx, req)
 		require.NoError(t, err)
 
 		var content, owner string
-		row := deps.db.QueryRow(ctx, "SELECT content, owner_id FROM messages WHERE id = $1", rsp.GetId())
+		row := deps.DB.QueryRow(ctx, "SELECT content, owner_id FROM messages WHERE id = $1", rsp.GetId())
 		require.NoError(t, row.Scan(&content, &owner))
 		require.Equal(t, req.GetText(), content)
 		require.Equal(t, req.GetOwnerId(), owner)
@@ -34,10 +34,10 @@ func TestGetMessage(t *testing.T) {
 		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
 
 		req := testutil.CreateMessageRequest(ctx)
-		rsp, err := deps.client.CreateMessage(ctx, req)
+		rsp, err := deps.Client.CreateMessage(ctx, req)
 		require.NoError(t, err)
 
-		msg, err := deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: rsp.GetId()})
+		msg, err := deps.Client.GetMessage(ctx, &standup.GetMessageRequest{Id: rsp.GetId()})
 		require.NoError(t, err)
 		require.Equal(t, req.GetText(), msg.GetMessage().GetText())
 		require.Equal(t, req.GetOwnerId(), msg.GetMessage().GetOwnerId())
@@ -47,7 +47,7 @@ func TestGetMessage(t *testing.T) {
 		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
 		id, err := identifiers.GenerateID()
 		require.NoError(t, err)
-		_, err = deps.client.GetMessage(ctx, &standup.GetMessageRequest{Id: id})
+		_, err = deps.Client.GetMessage(ctx, &standup.GetMessageRequest{Id: id})
 		testutil.RequireErrCode(t, codes.NotFound, err)
 	})
 }
@@ -60,12 +60,12 @@ func TestListMessages(t *testing.T) {
 		expected := make([]string, 3)
 		for i := range expected {
 			req := testutil.CreateMessageRequest(ctx)
-			rsp, err := deps.client.CreateMessage(ctx, req)
+			rsp, err := deps.Client.CreateMessage(ctx, req)
 			require.NoError(t, err)
 			expected[i] = rsp.GetId()
 		}
 
-		rsp, err := deps.client.ListMessages(ctx, &standup.ListMessagesRequest{
+		rsp, err := deps.Client.ListMessages(ctx, &standup.ListMessagesRequest{
 			OwnerId: testutil.OwnerID(ctx),
 			From:    timestamppb.New(from),
 			To:      timestamppb.Now(),
@@ -83,15 +83,15 @@ func TestListMessages(t *testing.T) {
 		from := time.Now()
 
 		req := testutil.CreateMessageRequest(ctx)
-		msg, err := deps.client.CreateMessage(ctx, req)
+		msg, err := deps.Client.CreateMessage(ctx, req)
 		require.NoError(t, err)
 
 		to := time.Now()
 
-		_, err = deps.client.CreateMessage(ctx, req)
+		_, err = deps.Client.CreateMessage(ctx, req)
 		require.NoError(t, err)
 
-		rsp, err := deps.client.ListMessages(ctx, &standup.ListMessagesRequest{
+		rsp, err := deps.Client.ListMessages(ctx, &standup.ListMessagesRequest{
 			OwnerId: testutil.OwnerID(ctx),
 			From:    timestamppb.New(from),
 			To:      timestamppb.New(to),
@@ -105,14 +105,14 @@ func TestListMessages(t *testing.T) {
 		from := time.Now()
 
 		req := testutil.CreateMessageRequest(ctx)
-		msg, err := deps.client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
+		msg, err := deps.Client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
 		require.NoError(t, err)
 
 		req.OwnerId = "another-" + req.GetOwnerId()
-		_, err = deps.client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
+		_, err = deps.Client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
 		require.NoError(t, err)
 
-		rsp, err := deps.client.ListMessages(withToken(ctx, t, testutil.OwnerID(ctx)), &standup.ListMessagesRequest{
+		rsp, err := deps.Client.ListMessages(withToken(ctx, t, testutil.OwnerID(ctx)), &standup.ListMessagesRequest{
 			OwnerId: testutil.OwnerID(ctx),
 			From:    timestamppb.New(from),
 			To:      timestamppb.Now(),
@@ -124,7 +124,7 @@ func TestListMessages(t *testing.T) {
 
 	RunTest(t, "empty", func(ctx context.Context, t *testing.T) {
 		ctx = withToken(ctx, t, testutil.OwnerID(ctx))
-		rsp, err := deps.client.ListMessages(ctx, &standup.ListMessagesRequest{
+		rsp, err := deps.Client.ListMessages(ctx, &standup.ListMessagesRequest{
 			OwnerId: testutil.OwnerID(ctx),
 			From:    timestamppb.New(time.Now()),
 			To:      timestamppb.New(time.Now().Add(time.Hour)),
