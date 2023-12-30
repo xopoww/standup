@@ -140,16 +140,6 @@ func RunTest(t *testing.T, name string, f testFunc, opts ...func(context.Context
 
 	ctx = logging.WithLogger(ctx, deps.logger)
 
-	uid, err := tests.GenerateID()
-	require.NoError(t, err)
-	ctx = tests.WithUserID(ctx, uid)
-
-	cid, err := tests.GenerateID()
-	require.NoError(t, err)
-	ctx = tests.WithChatID(ctx, cid)
-
-	logging.L(ctx).Sugar().Debugf("Using user %d and chat %d for test %q.", uid, cid, testutil.TestID(ctx))
-
 	for _, opt := range opts {
 		ctx = opt(ctx)
 	}
@@ -157,6 +147,26 @@ func RunTest(t *testing.T, name string, f testFunc, opts ...func(context.Context
 		logging.L(ctx).Sugar().Infof("Running %s with ID %q...", tt.Name(), testutil.TestID(ctx))
 		f(ctx, tt)
 	})
+}
+
+func RunBotTest(t *testing.T, name string, f testFunc, opts ...func(context.Context) context.Context) {
+	RunTest(t, name, func(ctx context.Context, t *testing.T) {
+		uid, err := tests.GenerateID()
+		require.NoError(t, err)
+		ctx = tests.WithUserID(ctx, uid)
+
+		cid, err := tests.GenerateID()
+		require.NoError(t, err)
+		ctx = tests.WithChatID(ctx, cid)
+		t.Cleanup(func() {
+			logging.L(ctx).Sugar().Debugf(
+				"Chat %d history:\n\n%s", cid,
+				tests.ChatHistory(ctx, t, deps.TM, tests.ContextChat(ctx)))
+		})
+
+		logging.L(ctx).Sugar().Debugf("Using user %d and chat %d for test %q.", uid, cid, testutil.TestID(ctx))
+		f(ctx, t)
+	}, opts...)
 }
 
 func withToken(ctx context.Context, t *testing.T, subjectID string) context.Context {

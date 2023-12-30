@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/bot/formatting"
-	"github.com/xopoww/standup/internal/common/logging"
 	"github.com/xopoww/standup/internal/common/repository/dberrors"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/tgmock/tests"
@@ -29,11 +28,8 @@ func TestBotWhitelist(t *testing.T) {
 		},
 	}
 	for _, c := range cc {
-		RunTest(t, c.name, func(ctx context.Context, t *testing.T) {
+		RunBotTest(t, c.name, func(ctx context.Context, t *testing.T) {
 			chat := tests.ContextChat(ctx)
-			defer func() {
-				logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
-			}()
 
 			user := tests.ContextUser(ctx)
 			if c.whitelisted {
@@ -54,11 +50,8 @@ func TestBotWhitelist(t *testing.T) {
 }
 
 func TestBotHelp(t *testing.T) {
-	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+	RunBotTest(t, "default", func(ctx context.Context, t *testing.T) {
 		chat := tests.ContextChat(ctx)
-		defer func() {
-			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
-		}()
 
 		user := tests.ContextUser(ctx)
 		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
@@ -81,11 +74,8 @@ func TestBotHelp(t *testing.T) {
 }
 
 func TestBotCreateMessage(t *testing.T) {
-	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+	RunBotTest(t, "default", func(ctx context.Context, t *testing.T) {
 		chat := tests.ContextChat(ctx)
-		defer func() {
-			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
-		}()
 
 		user := tests.ContextUser(ctx)
 		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
@@ -111,11 +101,8 @@ func TestBotCreateMessage(t *testing.T) {
 }
 
 func TestBotReport(t *testing.T) {
-	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+	RunBotTest(t, "default", func(ctx context.Context, t *testing.T) {
 		chat := tests.ContextChat(ctx)
-		defer func() {
-			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
-		}()
 
 		user := tests.ContextUser(ctx)
 		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
@@ -134,12 +121,8 @@ func TestBotReport(t *testing.T) {
 
 // TODO: remove after transition period
 func TestBotSetUserID(t *testing.T) {
-	RunTest(t, "default", func(ctx context.Context, t *testing.T) {
+	RunBotTest(t, "default", func(ctx context.Context, t *testing.T) {
 		chat := tests.ContextChat(ctx)
-		defer func() {
-			logging.L(ctx).Sugar().Debugf("Chat %d history:\n%s", chat.GetId(), tests.ChatHistory(ctx, t, deps.TM, chat))
-		}()
-
 		user := tests.ContextUser(ctx)
 		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
 
