@@ -11,5 +11,6 @@ func Migrate(deps *standupctl.Deps) *cobra.Command {
 		Short: "Perform database migrations",
 	}
 	cmd.AddCommand(up(deps))
+	cmd.AddCommand(force(deps))
 	return cmd
 }
