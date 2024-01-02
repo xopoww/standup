@@ -32,7 +32,8 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 			return formatting.NewSyntaxErrorf(err.Error())
 		}
 	} else {
-		to = now
+		// add a second to compensate for low resolution of Telegram timestamps
+		to = now.Add(time.Second)
 	}
 
 	ctx, err = s.issueToken(ctx, tm.From.UserName, ShortTTL)
