@@ -3,14 +3,13 @@ package tgmock
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 	"github.com/xopoww/standup/internal/common/logging"
 	"github.com/xopoww/standup/pkg/tgmock/control"
 )
@@ -36,8 +35,12 @@ func (tm *TGMock) handleGetMe(_ *http.Request) (any, error) {
 }
 
 func (tm *TGMock) handleSendMessage(r *http.Request) (any, error) {
-	chatID, err := mustGetInt(r.Form, "chat_id")
-	if err != nil {
+	var req struct {
+		ChatID           int64  `schema:"chat_id" validate:"required"`
+		ReplyToMessageID *int64 `schema:"reply_to_message_id"`
+		Text             string `schema:"text"`
+	}
+	if err := decode(r.Form, &req); err != nil {
 		return nil, err
 	}
 
@@ -48,18 +51,16 @@ func (tm *TGMock) handleSendMessage(r *http.Request) (any, error) {
 		From: tm.me(),
 		Date: time.Now().Unix(),
 		Chat: &control.Chat{
-			Id: chatID,
+			Id: req.ChatID,
 		},
-		Text: r.Form.Get("text"),
+		Text: req.Text,
 	}
-	if replyToMessageID, err := mustGetInt(r.Form, "reply_to_message_id"); err == nil {
-		replyToMessage, err := tm.getMessage(chatID, replyToMessageID)
+	if req.ReplyToMessageID != nil {
+		replyToMessage, err := tm.getMessage(req.ChatID, *req.ReplyToMessageID)
 		if err != nil {
 			return nil, err
 		}
 		msg.ReplyToMessage = replyToMessage
-	} else if !errors.Is(err, ErrNoField) {
-		return nil, err
 	}
 	tm.addMessage(r.Context(), msg)
 
@@ -67,46 +68,36 @@ func (tm *TGMock) handleSendMessage(r *http.Request) (any, error) {
 }
 
 func (tm *TGMock) handleGetUpdates(r *http.Request) (any, error) {
-	offset, err := mustGetInt(r.Form, "offset")
-	if err != nil {
-		if errors.Is(err, ErrNoField) {
-			offset = 0
-		} else {
-			return nil, err
-		}
+	var req struct {
+		Offset  int64 `schema:"offset" validate:"gte=0"`
+		Limit   int64 `schema:"limit"`
+		Timeout int64 `schema:"timeout"`
 	}
-	if offset < 0 {
-		return nil, fmt.Errorf("negative offset is not supported")
+	if err := decode(r.Form, &req); err != nil {
+		return nil, err
 	}
 
-	limit, err := mustGetInt(r.Form, "limit")
-	if err != nil {
-		if errors.Is(err, ErrNoField) {
-			limit = 100
-		} else {
-			return nil, err
-		}
-	}
-
-	timeout, err := mustGetInt(r.Form, "timeout")
-	if err != nil {
-		if errors.Is(err, ErrNoField) {
-			timeout = 0
-		} else {
-			return nil, err
-		}
+	const defaultLimit = 100
+	if req.Limit == 0 {
+		req.Limit = defaultLimit
 	}
 
 	rsp := make([]*control.Update, 0)
 	start := time.Now()
 	for {
 		tm.mx.Lock()
-		for uid := offset; uid < int64(len(tm.updates)) && len(rsp) < int(limit); uid++ {
+		if req.Offset < tm.lastOffset {
+			req.Offset = tm.lastOffset
+		} else {
+			tm.lastOffset = req.Offset
+		}
+
+		for uid := req.Offset; uid < int64(len(tm.updates)) && len(rsp) < int(req.Limit); uid++ {
 			rsp = append(rsp, tm.updates[uid])
 		}
 		tm.mx.Unlock()
 
-		if len(rsp) > 0 || time.Since(start) > time.Second*time.Duration(timeout) {
+		if len(rsp) > 0 || time.Since(start) > time.Second*time.Duration(req.Limit) {
 			break
 		}
 		time.Sleep(time.Second)
@@ -152,23 +143,11 @@ func writeJSONResponse(ctx context.Context, w http.ResponseWriter, body interfac
 	}
 }
 
-var ErrNoField = errors.New("missing required field")
-
-func mustGet(v url.Values, key string) (string, error) {
-	if !v.Has(key) {
-		return "", fmt.Errorf("%w %q", ErrNoField, key)
+func decode(v url.Values, dst any) error {
+	d := schema.NewDecoder()
+	d.IgnoreUnknownKeys(true)
+	if err := d.Decode(dst, v); err != nil {
+		return err
 	}
-	return v.Get(key), nil
-}
-
-func mustGetInt(v url.Values, key string) (int64, error) {
-	s, err := mustGet(v, key)
-	if err != nil {
-		return 0, err
-	}
-	i, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return i, nil
+	return validator.New(validator.WithRequiredStructEnabled()).Struct(dst)
 }

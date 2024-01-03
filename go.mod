@@ -37,6 +37,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/schema v1.2.1
 	github.com/jackc/pgx/v5 v5.5.0
 	github.com/spf13/cobra v1.7.0
 	github.com/trstringer/go-systemd-time v1.0.0

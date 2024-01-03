@@ -23,9 +23,10 @@ type TGMock struct {
 	cfg    Config
 	logger *zap.Logger
 
-	mx      sync.Locker
-	chats   map[int64][]*control.Message
-	updates []*control.Update
+	mx         sync.Locker
+	chats      map[int64][]*control.Message
+	updates    []*control.Update
+	lastOffset int64
 }
 
 func New(cfg Config, logger *zap.Logger) *TGMock {
