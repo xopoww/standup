@@ -12,5 +12,6 @@ func Migrate(deps *standupctl.Deps) *cobra.Command {
 	}
 	cmd.AddCommand(up(deps))
 	cmd.AddCommand(force(deps))
+	cmd.AddCommand(to(deps))
 	return cmd
 }
