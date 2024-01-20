@@ -6,8 +6,6 @@ import (
 	"errors"
 )
 
-// var rng = rand.New(rand.NewSource(time.Now().Unix()))
-
 func generate(length int) (string, error) {
 	if length%2 != 0 {
 		return "", errors.New("length must be even")

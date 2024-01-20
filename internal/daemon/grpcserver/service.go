@@ -10,7 +10,6 @@ import (
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
 	"github.com/xopoww/standup/internal/common/repository/dberrors"
-	"github.com/xopoww/standup/internal/common/repository/pg"
 	"github.com/xopoww/standup/internal/daemon/models"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/identifiers"
@@ -22,12 +21,12 @@ import (
 type service struct {
 	standup.UnimplementedStandupServer
 
-	repo *pg.Repository
+	repo models.Models
 
 	ath auth.Authenticator
 }
 
-func NewService(repo *pg.Repository, ath auth.Authenticator) standup.StandupServer {
+func NewService(repo models.Models, ath auth.Authenticator) standup.StandupServer {
 	return &service{repo: repo, ath: ath}
 }
 

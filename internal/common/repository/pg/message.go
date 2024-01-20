@@ -44,7 +44,7 @@ func (r *Repository) GetMessage(ctx context.Context, id string) (*models.Message
 	return msg, nil
 }
 
-func (r *Repository) ListMessages(ctx context.Context, ownerID string, from, to time.Time) ([]*models.Message, error) {
+func (r *Repository) ListMessages(ctx context.Context, ownerID int64, from, to time.Time) ([]*models.Message, error) {
 	const stmt = "list_messages"
 	_, err := r.conn.Prepare(ctx, stmt,
 		"SELECT id, content, created_at FROM messages WHERE owner_id = $1 AND created_at >= $2 AND created_at < $3",

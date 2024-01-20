@@ -66,7 +66,7 @@ func protoMessages(texts ...string) []*standup.Message {
 		msgs[i] = &standup.Message{
 			Id:        "test-id",
 			Text:      texts[i],
-			OwnerId:   "test-owner",
+			OwnerId:   12345,
 			CreatedAt: timestamppb.Now(),
 		}
 	}

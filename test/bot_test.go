@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/xopoww/standup/internal/bot/formatting"
-	"github.com/xopoww/standup/internal/common/repository/dberrors"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"github.com/xopoww/standup/pkg/tgmock/tests"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -86,9 +85,9 @@ func TestBotCreateMessage(t *testing.T) {
 		msg := tests.WaitForMessages(ctx, t, deps.TM, chat, 1, time.Minute)[0]
 		require.Contains(t, msg.GetText(), "Created message")
 
-		rsp, err := deps.Client.ListMessages(withToken(ctx, t, user.GetUsername()),
+		rsp, err := deps.Client.ListMessages(withToken(ctx, t, user.GetId()),
 			&standup.ListMessagesRequest{
-				OwnerId: user.GetUsername(),
+				OwnerId: user.GetId(),
 				From:    timestamppb.New(from),
 				To:      timestamppb.Now(),
 			},
@@ -116,31 +115,5 @@ func TestBotReport(t *testing.T) {
 		msg = tests.WaitForMessagesSince(ctx, t, deps.TM, chat, 1, time.Minute, msg.GetMessageId())[0]
 		require.Contains(t, msg.GetText(), "Report")
 		require.Contains(t, msg.GetText(), formatting.Escape(text))
-	})
-}
-
-// TODO: remove after transition period
-func TestBotSetUserID(t *testing.T) {
-	RunBotTest(t, "default", func(ctx context.Context, t *testing.T) {
-		chat := tests.ContextChat(ctx)
-		user := tests.ContextUser(ctx)
-		require.NoError(t, deps.Repo.SetWhitelisted(ctx, user.GetId(), true))
-
-		// insert user without id (as if it was created before migration)
-		_, err := deps.DB.Exec(ctx, `INSERT INTO users (username) VALUES ($1)`, user.GetUsername())
-		require.NoError(t, err)
-
-		// ensure user cannot be found by id
-		_, err = deps.Repo.GetUserByID(ctx, user.GetId())
-		require.ErrorIs(t, err, dberrors.ErrNotFound)
-
-		// send something to the bot
-		tests.SendMessage(ctx, t, deps.TM, user, chat, "/start")
-		tests.WaitForMessages(ctx, t, deps.TM, chat, 1, time.Minute)
-
-		// ensure user now can be found by id
-		dbUser, err := deps.Repo.GetUserByID(ctx, user.GetId())
-		require.NoError(t, err)
-		require.Equal(t, user.GetId(), dbUser.ID)
 	})
 }

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"github.com/xopoww/standup/internal/bot/tg"
 	"github.com/xopoww/standup/internal/common/auth"
 	"github.com/xopoww/standup/internal/common/logging"
-	"github.com/xopoww/standup/internal/common/repository/dberrors"
 	"github.com/xopoww/standup/pkg/api/standup"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -145,16 +143,6 @@ func (s *Service) handleUpdate(ctx context.Context, u tgbotapi.Update) error {
 
 func (s *Service) handleMessageSender(ctx context.Context, msg tgbotapi.Message) (bool, error) {
 	user := models.FromTG(msg.From)
-
-	// TODO: rm after transition period
-	if _, err := s.deps.Models.GetUserByID(ctx, user.ID); errors.Is(err, dberrors.ErrNotFound) {
-		err := s.deps.Models.SetUserID(ctx, user.Username, user.ID)
-		if err == nil {
-			logging.L(ctx).Sugar().Infof("Set id for user %s.", user)
-		} else if !errors.Is(err, dberrors.ErrNotFound) {
-			return false, fmt.Errorf("set user id: %w", err)
-		}
-	}
 
 	if err := s.deps.Models.UpsertUser(ctx, user); err != nil {
 		return false, fmt.Errorf("upsert user: %w", err)

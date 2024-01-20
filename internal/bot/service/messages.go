@@ -36,13 +36,13 @@ func (s *Service) getReport(ctx context.Context, tm tgbotapi.Message) (err error
 		to = now.Add(time.Second)
 	}
 
-	ctx, err = s.issueToken(ctx, tm.From.UserName, ShortTTL)
+	ctx, err = s.issueToken(ctx, tm.From.ID, ShortTTL)
 	if err != nil {
 		return fmt.Errorf("issue token: %w", err)
 	}
 
 	rsp, err := s.deps.Client.ListMessages(ctx, &standup.ListMessagesRequest{
-		OwnerId: tm.From.UserName,
+		OwnerId: tm.From.ID,
 		From:    timestamppb.New(from),
 		To:      timestamppb.New(to),
 	})
@@ -63,14 +63,14 @@ func (s *Service) addMessage(ctx context.Context, tm tgbotapi.Message) (err erro
 		return nil
 	}
 
-	ctx, err = s.issueToken(ctx, tm.From.UserName, ShortTTL)
+	ctx, err = s.issueToken(ctx, tm.From.ID, ShortTTL)
 	if err != nil {
 		return fmt.Errorf("issue token: %w", err)
 	}
 
 	rsp, err := s.deps.Client.CreateMessage(ctx, &standup.CreateMessageRequest{
 		Text:    tm.Text,
-		OwnerId: tm.From.UserName,
+		OwnerId: tm.From.ID,
 	})
 	if err != nil {
 		return fmt.Errorf("create message: %w", err)

@@ -21,7 +21,10 @@ func TestCreateMessage(t *testing.T) {
 		rsp, err := deps.Client.CreateMessage(ctx, req)
 		require.NoError(t, err)
 
-		var content, owner string
+		var (
+			content string
+			owner   int64
+		)
 		row := deps.DB.QueryRow(ctx, "SELECT content, owner_id FROM messages WHERE id = $1", rsp.GetId())
 		require.NoError(t, row.Scan(&content, &owner))
 		require.Equal(t, req.GetText(), content)
@@ -108,7 +111,7 @@ func TestListMessages(t *testing.T) {
 		msg, err := deps.Client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
 		require.NoError(t, err)
 
-		req.OwnerId = "another-" + req.GetOwnerId()
+		req.OwnerId = req.GetOwnerId() + 1
 		_, err = deps.Client.CreateMessage(withToken(ctx, t, req.GetOwnerId()), req)
 		require.NoError(t, err)
 
