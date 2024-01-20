@@ -21,7 +21,7 @@ func TestAuth(t *testing.T) {
 		msg, err := deps.Client.CreateMessage(withToken(ctx, t, testutil.OwnerID(ctx)), testutil.CreateMessageRequest(ctx))
 		require.NoError(t, err)
 
-		ctx = withToken(ctx, t, "wrong-"+testutil.OwnerID(ctx))
+		ctx = withToken(ctx, t, testutil.OwnerID(ctx)+1)
 
 		_, err = deps.Client.CreateMessage(ctx, testutil.CreateMessageRequest(ctx))
 		testutil.RequireErrCode(t, codes.PermissionDenied, err)

@@ -7,7 +7,7 @@ import (
 
 type Authenticator interface {
 	Enabled() bool
-	Authenticate(raw string) (subjectID string, err error)
+	Authenticate(raw string) (subjectID int64, err error)
 }
 
 type staticAuthenticator struct {
@@ -19,9 +19,9 @@ func (a staticAuthenticator) Enabled() bool {
 	return a.enabled
 }
 
-func (a staticAuthenticator) Authenticate(raw string) (subjectID string, err error) {
+func (a staticAuthenticator) Authenticate(raw string) (subjectID int64, err error) {
 	if !a.enabled {
-		return "", errors.New("authentication is disabled")
+		return 0, errors.New("authentication is disabled")
 	}
 	return ValidateToken(raw, a.key)
 }

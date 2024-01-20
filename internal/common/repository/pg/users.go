@@ -25,17 +25,6 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 	return user, nil
 }
 
-func (r *Repository) SetUserID(ctx context.Context, username string, id int64) error {
-	ct, err := r.conn.Exec(ctx, `UPDATE users SET id = $1 WHERE username = $2 AND id IS NULL`, id, username)
-	if err != nil {
-		return err
-	}
-	if ct.RowsAffected() == 0 {
-		return dberrors.ErrNotFound
-	}
-	return nil
-}
-
 func (r *Repository) UpsertUser(ctx context.Context, user *models.User) error {
 	_, err := r.conn.Exec(ctx, `
 		INSERT INTO users (id, username) VALUES ($1, $2)

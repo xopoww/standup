@@ -169,11 +169,11 @@ func RunBotTest(t *testing.T, name string, f testFunc, opts ...func(context.Cont
 	}, opts...)
 }
 
-func withToken(ctx context.Context, t *testing.T, subjectID string) context.Context {
+func withToken(ctx context.Context, t *testing.T, subjectID int64) context.Context {
 	if !deps.cfg.Auth.Enabled {
 		return ctx
 	}
-	logging.L(ctx).Sugar().Debugf("Using self-signed token for %q.", subjectID)
+	logging.L(ctx).Sugar().Debugf("Using self-signed token for %d.", subjectID)
 	now := time.Now()
 	token, err := auth.IssueToken(subjectID, now, now.Add(time.Hour), deps.jwtPrivateKey)
 	require.NoError(t, err)
